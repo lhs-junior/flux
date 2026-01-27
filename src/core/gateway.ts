@@ -175,6 +175,9 @@ export class AwesomePluginGateway {
       // Register tools from this server
       await this.registerServerTools(config.id);
     } catch (error) {
+      // Connection failed - clean up
+      this.connectedServers.delete(config.id);
+      this.mcpClients.delete(config.id);
       console.error(`Failed to connect to server ${config.name}:`, error);
       throw error;
     }
@@ -244,6 +247,13 @@ export class AwesomePluginGateway {
    * Search for tools using BM25 and query processing
    */
   async searchTools(query: string, options?: { limit?: number }): Promise<ToolMetadata[]> {
+    const limit = options?.limit || this.maxLayer2Tools;
+
+    // If query is empty, return all tools up to the limit
+    if (!query || !query.trim()) {
+      return Array.from(this.availableTools.values()).slice(0, limit);
+    }
+
     // Process query to extract intent
     const processedQuery = this.queryProcessor.processQuery(query);
 
@@ -255,7 +265,7 @@ export class AwesomePluginGateway {
 
     // Use enhanced query for better search results
     const result = await this.toolLoader.loadTools(processedQuery.enhancedQuery, {
-      maxLayer2: options?.limit || this.maxLayer2Tools,
+      maxLayer2: limit,
     });
 
     console.log('Tool search completed:', {
@@ -264,6 +274,7 @@ export class AwesomePluginGateway {
       foundTools: result.relevant.length,
     });
 
+    // Results already have category and keywords from BM25 indexer
     return result.relevant;
   }
 

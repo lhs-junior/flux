@@ -140,13 +140,28 @@ export class MetadataStore {
     );
   }
 
-  getPlugin(id: string): PluginRecord | undefined {
+  getPlugin(id: string): PluginRecord | null {
     const stmt = this.db.prepare(`
       SELECT id, name, command, args, env, added_at as addedAt, last_used as lastUsed, usage_count as usageCount, quality_score as qualityScore
       FROM plugins WHERE id = ?
     `);
 
-    return stmt.get(id) as PluginRecord | undefined;
+    const result = stmt.get(id) as any;
+    if (!result) {
+      return null;
+    }
+
+    return {
+      id: result.id,
+      name: result.name,
+      command: result.command,
+      args: result.args || undefined,
+      env: result.env || undefined,
+      addedAt: result.addedAt,
+      lastUsed: result.lastUsed,
+      usageCount: result.usageCount,
+      qualityScore: result.qualityScore,
+    };
   }
 
   getAllPlugins(): PluginRecord[] {
@@ -205,7 +220,7 @@ export class MetadataStore {
     insertMany(tools);
   }
 
-  getTool(name: string): ToolMetadata | undefined {
+  getTool(name: string): ToolMetadata | null {
     const stmt = this.db.prepare(`
       SELECT name, server_id as serverId, description, input_schema as inputSchema, category, keywords
       FROM tools WHERE name = ?
@@ -213,7 +228,7 @@ export class MetadataStore {
 
     const row = stmt.get(name) as any;
     if (!row) {
-      return undefined;
+      return null;
     }
 
     return {
@@ -221,7 +236,7 @@ export class MetadataStore {
       description: row.description,
       inputSchema: JSON.parse(row.inputSchema),
       serverId: row.serverId,
-      category: row.category,
+      category: row.category || undefined,
       keywords: row.keywords ? JSON.parse(row.keywords) : undefined,
     };
   }

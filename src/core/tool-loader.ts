@@ -24,14 +24,7 @@ export class ToolLoader {
 
   constructor() {
     this.allTools = new Map();
-    this.essentialTools = new Set([
-      // Default essential tools (Layer 1)
-      'read_file',
-      'write_file',
-      'search_files',
-      'list_directory',
-      'bash_command',
-    ]);
+    this.essentialTools = new Set();
     this.loadingHistory = new Map();
     this.bm25Indexer = new BM25Indexer({
       k1: 1.2, // Term frequency saturation parameter
@@ -74,7 +67,7 @@ export class ToolLoader {
    * Layer 2: Query-matched tools (based on BM25 search)
    * Layer 3: On-demand tools (loaded when explicitly requested)
    */
-  async loadTools(query?: string, options?: { maxLayer2?: number }): Promise<LoadedToolsResult> {
+  loadTools(query?: string, options?: { maxLayer2?: number }): LoadedToolsResult {
     const maxLayer2 = options?.maxLayer2 || 15;
 
     // Layer 1: Essential tools
@@ -87,9 +80,9 @@ export class ToolLoader {
     let searchTimeMs: number | undefined;
     let searchMethod: 'bm25' | 'keyword' | 'none' = 'none';
 
-    if (query) {
+    if (query && query.trim()) {
       const startTime = performance.now();
-      relevant = this.searchTools(query, maxLayer2);
+      relevant = this.searchTools(query, { limit: maxLayer2 });
       searchTimeMs = performance.now() - startTime;
       searchMethod = 'bm25';
     }
@@ -103,7 +96,7 @@ export class ToolLoader {
       relevant,
       available: this.allTools.size,
       strategy: {
-        layer: query ? 2 : 1,
+        layer: query && query.trim() ? 2 : 1,
         priority: this.calculatePriority(essential.length, relevant.length),
         reason: query
           ? `Loaded ${essential.length} essential + ${relevant.length} query-matched tools using BM25`
@@ -118,7 +111,13 @@ export class ToolLoader {
    * Search tools using BM25 algorithm
    * Combines BM25 scores with usage history for better relevance
    */
-  private searchTools(query: string, limit: number): ToolMetadata[] {
+  searchTools(query: string, options?: { limit?: number }): ToolMetadata[] {
+    if (!query || !query.trim()) {
+      return [];
+    }
+
+    const limit = options?.limit || 15;
+
     // Get BM25 results
     const bm25Results = this.bm25Indexer.search(query, { limit: limit * 2 });
 
@@ -208,5 +207,6 @@ export class ToolLoader {
     this.allTools.clear();
     this.loadingHistory.clear();
     this.bm25Indexer.clear();
+    this.essentialTools.clear();
   }
 }

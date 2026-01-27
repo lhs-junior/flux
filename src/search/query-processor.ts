@@ -29,16 +29,26 @@ export interface ProcessedQuery {
 }
 
 export class QueryProcessor {
-  // Common action verbs mapped to their synonyms
-  private actionSynonyms: Map<string, string[]> = new Map([
-    ['send', ['send', 'post', 'publish', 'transmit', 'deliver']],
-    ['read', ['read', 'get', 'fetch', 'retrieve', 'view', 'show']],
-    ['write', ['write', 'create', 'add', 'insert', 'save']],
-    ['update', ['update', 'modify', 'change', 'edit', 'alter']],
-    ['delete', ['delete', 'remove', 'drop', 'clear', 'erase']],
-    ['search', ['search', 'find', 'query', 'lookup', 'locate']],
-    ['list', ['list', 'show', 'display', 'enumerate']],
-  ]);
+  // Map individual action words to their canonical form
+  private actionSynonyms: Record<string, string> = {
+    'send': 'send',
+    'read': 'read',
+    'write': 'write',
+    'delete': 'delete',
+    'create': 'write',
+    'update': 'write',
+    'modify': 'write',
+    'add': 'write',
+    'insert': 'write',
+    'list': 'read',
+    'search': 'read',
+    'find': 'read',
+    'get': 'read',
+    'fetch': 'read',
+    'query': 'read',
+    'remove': 'delete',
+    'destroy': 'delete',
+  };
 
   // Category keywords for domain classification
   private categoryKeywords: Map<ToolCategory, string[]> = new Map([
@@ -80,7 +90,7 @@ export class QueryProcessor {
       ],
     ],
     ['web', ['http', 'api', 'fetch', 'request', 'url', 'endpoint', 'rest', 'graphql']],
-    ['ai', ['ai', 'llm', 'model', 'embedding', 'vector', 'semantic', 'ml', 'prompt']],
+    ['ai', ['gpt', 'llm', 'ai', 'generate', 'model', 'anthropic', 'openai', 'claude']],
   ]);
 
   // Common stop words to filter out
@@ -93,6 +103,7 @@ export class QueryProcessor {
     'at',
     'be',
     'by',
+    'but',
     'for',
     'from',
     'has',
@@ -103,6 +114,7 @@ export class QueryProcessor {
     'its',
     'of',
     'on',
+    'or',
     'that',
     'the',
     'to',
@@ -159,20 +171,23 @@ export class QueryProcessor {
    * Detect user intent (action + domain + entities)
    */
   private detectIntent(query: string, keywords: string[]): QueryIntent {
-    // Detect action verb
+    // Detect action verb and map to canonical form
     let action: string | undefined;
-    let maxActionMatches = 0;
 
-    for (const [baseAction, synonyms] of this.actionSynonyms.entries()) {
-      const matches = synonyms.filter((syn) => query.includes(syn)).length;
-      if (matches > maxActionMatches) {
-        maxActionMatches = matches;
-        action = baseAction;
+    for (const synonym in this.actionSynonyms) {
+      if (query.includes(synonym)) {
+        action = this.actionSynonyms[synonym];
+        break;
       }
     }
 
+    // Default action for queries with no clear action
+    if (!action && keywords.length > 0) {
+      action = 'read';
+    }
+
     // Detect domain/category
-    let domain: ToolCategory = 'other';
+    let domain: ToolCategory | undefined;
     let maxCategoryScore = 0;
 
     for (const [category, categoryWords] of this.categoryKeywords.entries()) {
@@ -188,22 +203,24 @@ export class QueryProcessor {
       }
     }
 
-    // Extract entities (keywords that are not action verbs or common words)
-    const entities = keywords.filter((kw) => {
-      return !Array.from(this.actionSynonyms.values()).some((synonyms) =>
-        synonyms.includes(kw)
-      );
-    });
+    // Default domain for queries with no clear domain
+    if (!domain && keywords.length > 0) {
+      domain = 'other';
+    }
+
+    // Extract entities (keywords that are not in action synonyms)
+    const actionSynonymWords = new Set(Object.keys(this.actionSynonyms));
+    const entities = keywords.filter((kw) => !actionSynonymWords.has(kw));
 
     // Calculate confidence based on matches
-    const confidence =
-      (maxActionMatches > 0 ? 0.3 : 0) +
-      (maxCategoryScore > 0 ? 0.5 : 0) +
-      (entities.length > 0 ? 0.2 : 0);
+    let confidence = 0;
+    if (action) confidence += 0.3;
+    if (domain && domain !== 'other') confidence += 0.5;
+    if (entities.length > 0) confidence += 0.2;
 
     return {
       action,
-      domain: maxCategoryScore > 0 ? domain : undefined,
+      domain,
       entities,
       confidence: Math.min(confidence, 1.0),
     };
@@ -215,11 +232,16 @@ export class QueryProcessor {
   private enhanceQuery(query: string, intent: QueryIntent): string {
     const enhancements: string[] = [query];
 
-    // Add action synonyms
+    // Add action synonym words
     if (intent.action) {
-      const synonyms = this.actionSynonyms.get(intent.action);
-      if (synonyms) {
-        enhancements.push(...synonyms.filter((s) => !query.includes(s)));
+      for (const [synonym, canonical] of Object.entries(this.actionSynonyms)) {
+        if (canonical === intent.action && !query.includes(synonym)) {
+          enhancements.push(synonym);
+        }
+      }
+      // Add the canonical form if not in original query
+      if (!query.includes(intent.action)) {
+        enhancements.push(intent.action);
       }
     }
 

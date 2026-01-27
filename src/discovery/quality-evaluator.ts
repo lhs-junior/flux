@@ -91,8 +91,16 @@ export class QualityEvaluator {
   /**
    * Filter repositories that meet minimum quality score
    */
-  filterRecommended(repos: GitHubRepoInfo[]): Array<{ repo: GitHubRepoInfo; score: QualityScore }> {
-    return this.evaluateAll(repos).filter((item) => item.score.total >= this.minScore);
+  filterRecommended(repos: GitHubRepoInfo[]): GitHubRepoInfo[] {
+    return repos.filter(repo => {
+      // Validate required date fields
+      if (!repo.lastCommit || !repo.createdAt) {
+        return false; // Exclude repos with missing required fields
+      }
+
+      const score = this.evaluate(repo);
+      return score.total >= this.minScore;
+    });
   }
 
   /**
@@ -137,32 +145,38 @@ export class QualityEvaluator {
     let score = 0;
 
     const now = Date.now();
-    const daysSinceLastCommit = Math.floor((now - repo.lastCommit.getTime()) / (1000 * 60 * 60 * 24));
 
-    // Recency of last commit (0-15 points)
-    if (daysSinceLastCommit <= 7) {
-      score += 15; // Very active
-    } else if (daysSinceLastCommit <= 30) {
-      score += 12; // Active
-    } else if (daysSinceLastCommit <= 90) {
-      score += 8; // Moderately active
-    } else if (daysSinceLastCommit <= 180) {
-      score += 4; // Somewhat maintained
-    } else {
-      score += 1; // Possibly abandoned
+    // Defensive check for lastCommit
+    if (repo.lastCommit) {
+      const daysSinceLastCommit = Math.floor((now - repo.lastCommit.getTime()) / (1000 * 60 * 60 * 24));
+
+      // Recency of last commit (0-15 points)
+      if (daysSinceLastCommit <= 7) {
+        score += 15; // Very active
+      } else if (daysSinceLastCommit <= 30) {
+        score += 12; // Active
+      } else if (daysSinceLastCommit <= 90) {
+        score += 8; // Moderately active
+      } else if (daysSinceLastCommit <= 180) {
+        score += 4; // Somewhat maintained
+      } else {
+        score += 1; // Possibly abandoned
+      }
     }
 
     // Project age (0-5 points)
     // Mature projects are more stable
-    const monthsSinceCreation = Math.floor((now - repo.createdAt.getTime()) / (1000 * 60 * 60 * 24 * 30));
-    if (monthsSinceCreation >= 12) {
-      score += 5; // Mature
-    } else if (monthsSinceCreation >= 6) {
-      score += 3; // Established
-    } else if (monthsSinceCreation >= 3) {
-      score += 2; // Growing
-    } else {
-      score += 1; // New
+    if (repo.createdAt) {
+      const monthsSinceCreation = Math.floor((now - repo.createdAt.getTime()) / (1000 * 60 * 60 * 24 * 30));
+      if (monthsSinceCreation >= 12) {
+        score += 5; // Mature
+      } else if (monthsSinceCreation >= 6) {
+        score += 3; // Established
+      } else if (monthsSinceCreation >= 3) {
+        score += 2; // Growing
+      } else {
+        score += 1; // New
+      }
     }
 
     // Open issues ratio (0-5 points)
@@ -213,9 +227,9 @@ export class QualityEvaluator {
 
     // Has topics/tags (0-3 points)
     // Topics help with discoverability
-    if (repo.topics.length >= 3) {
+    if (repo.topics && repo.topics.length >= 3) {
       score += 3;
-    } else if (repo.topics.length >= 1) {
+    } else if (repo.topics && repo.topics.length >= 1) {
       score += 2;
     }
 
@@ -263,18 +277,26 @@ export class QualityEvaluator {
     if (repo.packageJson) {
       score += 2;
       if (repo.packageJson.version && repo.packageJson.version !== '0.0.0') {
-        score += 3; // Proper versioning
+        // Better differentiate major versions: 1.x.x+ gets more points than 0.x.x
+        const majorVersion = parseInt(repo.packageJson.version.split('.')[0] || '0');
+        if (majorVersion >= 1) {
+          score += 3; // Stable versioning (1.0.0+)
+        } else {
+          score += 1; // Pre-release versioning (0.x.x)
+        }
       }
     }
 
     // Recent activity (0-5 points)
-    const daysSinceUpdate = Math.floor((Date.now() - repo.updatedAt.getTime()) / (1000 * 60 * 60 * 24));
-    if (daysSinceUpdate <= 30) {
-      score += 5; // Recently updated
-    } else if (daysSinceUpdate <= 90) {
-      score += 3; // Somewhat recent
-    } else if (daysSinceUpdate <= 180) {
-      score += 1; // Not very recent
+    if (repo.updatedAt) {
+      const daysSinceUpdate = Math.floor((Date.now() - repo.updatedAt.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysSinceUpdate <= 30) {
+        score += 5; // Recently updated
+      } else if (daysSinceUpdate <= 90) {
+        score += 3; // Somewhat recent
+      } else if (daysSinceUpdate <= 180) {
+        score += 1; // Not very recent
+      }
     }
 
     return Math.min(score, 25);
@@ -319,15 +341,19 @@ export class QualityEvaluator {
     }
 
     // Maintenance
-    const daysSinceCommit = Math.floor((Date.now() - repo.lastCommit.getTime()) / (1000 * 60 * 60 * 24));
-    if (breakdown.maintenance >= 20) {
-      reasons.push(`🔧 Actively maintained (last commit ${daysSinceCommit} days ago)`);
-    } else if (breakdown.maintenance >= 15) {
-      reasons.push(`🔧 Well maintained (last commit ${daysSinceCommit} days ago)`);
-    } else if (breakdown.maintenance >= 10) {
-      reasons.push(`Moderately maintained (last commit ${daysSinceCommit} days ago)`);
-    } else {
-      reasons.push(`⚠️  Possibly unmaintained (last commit ${daysSinceCommit} days ago)`);
+    if (repo.lastCommit) {
+      const daysSinceCommit = Math.floor((Date.now() - repo.lastCommit.getTime()) / (1000 * 60 * 60 * 24));
+      if (breakdown.maintenance >= 20) {
+        reasons.push(`🔧 Actively maintained (last commit ${daysSinceCommit} days ago)`);
+      } else if (breakdown.maintenance >= 15) {
+        reasons.push(`🔧 Well maintained (last commit ${daysSinceCommit} days ago)`);
+      } else if (breakdown.maintenance >= 10) {
+        reasons.push(`Moderately maintained (last commit ${daysSinceCommit} days ago)`);
+      } else {
+        reasons.push(`⚠️  Possibly unmaintained (last commit ${daysSinceCommit} days ago)`);
+      }
+    } else if (breakdown.maintenance < 10) {
+      reasons.push('⚠️  No commit date available');
     }
 
     // Documentation

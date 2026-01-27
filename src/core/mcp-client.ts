@@ -137,6 +137,12 @@ export class MCPClient {
         arguments: args,
       });
 
+      // Check if MCP returned an error
+      if (response.isError) {
+        const errorText = response.content?.[0]?.text || 'Unknown error';
+        throw new Error(errorText);
+      }
+
       return response;
     } catch (error: any) {
       console.error(`Failed to call tool ${name} on ${this.config.id}:`, error);
