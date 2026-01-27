@@ -46,10 +46,17 @@ export class MetadataStore {
 
   constructor(options: MetadataStoreOptions = {}) {
     this.filepath = options.filepath || ':memory:';
-    this.db = new Database(this.filepath, {
-      readonly: options.readonly,
-      verbose: options.verbose ? console.log : undefined,
-    });
+
+    // Build database options (better-sqlite3 doesn't accept undefined values)
+    const dbOptions: Database.Options = {};
+    if (options.readonly !== undefined) {
+      dbOptions.readonly = options.readonly;
+    }
+    if (options.verbose) {
+      dbOptions.verbose = console.log;
+    }
+
+    this.db = new Database(this.filepath, dbOptions);
 
     this.initializeSchema();
   }

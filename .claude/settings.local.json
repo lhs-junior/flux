@@ -9,7 +9,9 @@
       "Bash(git add:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Initialize Awesome MCP Meta Plugin project \\(Phase 1 MVP\\)\n\n- Set up TypeScript project with MCP SDK\n- Implement core MCP Gateway with multi-server support\n- Add Session Manager for tracking user sessions\n- Add Tool Loader with 3-layer loading strategy\n- Create CLI with basic commands \\(start, init, discover, list, stats\\)\n- Configure build system with tsup\n- Add comprehensive documentation in README\n\nThis is Phase 1 MVP \\(Core Gateway\\) of the 14-week implementation plan.\nToken savings strategy: 3-layer tool loading \\(Layer 1-2-3\\)\nExpected savings: 70-97% compared to loading all tools\n\nKey features:\n- Multi-server connection support\n- Dynamic tool registration\n- Session management\n- Usage tracking\n- Keyword-based tool search \\(BM25 in Phase 2\\)\n\nNext phase: Tool Search Engine with BM25 indexer\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(npm search:*)",
-      "Bash(npm view:*)"
+      "Bash(npm view:*)",
+      "Bash(node:*)",
+      "Bash(npx tsx:*)"
     ]
   }
 }

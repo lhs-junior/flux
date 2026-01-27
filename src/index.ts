@@ -1,6 +1,14 @@
-export { AwesomePluginGateway, type MCPServerConfig, type ToolMetadata } from './core/gateway.js';
+// Core exports
+export { AwesomePluginGateway, type MCPServerConfig, type ToolMetadata, type GatewayOptions } from './core/gateway.js';
 export { SessionManager, type Session } from './core/session-manager.js';
 export { ToolLoader, type LoadedToolsResult, type ToolLoadingStrategy } from './core/tool-loader.js';
+
+// Search exports
+export { BM25Indexer, type SearchResult, type IndexedDocument, type BM25IndexerOptions } from './search/bm25-indexer.js';
+export { QueryProcessor, type QueryIntent, type ProcessedQuery, type ToolCategory } from './search/query-processor.js';
+
+// Storage exports
+export { MetadataStore, type PluginRecord, type ToolRecord, type UsageLogRecord, type MetadataStoreOptions } from './storage/metadata-store.js';
 
 // Main entry point for running as MCP server
 async function main() {
