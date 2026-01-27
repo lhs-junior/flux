@@ -5,6 +5,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
 [![Node](https://img.shields.io/badge/Node-%3E%3D18.0.0-green)](https://nodejs.org/)
+[![Documentation](https://img.shields.io/badge/docs-available-brightgreen)](docs/)
+[![Tests](https://img.shields.io/badge/tests-231%20cases-success)](tests/)
 
 **Status**: ✅ **Production Ready** (Phase 6 Complete)
 
@@ -42,6 +44,30 @@ Awesome Plugin provides:
 | 50 | < 50ms | **0.16-0.45ms** | ✅ 110x faster |
 | 100 | < 50ms | **0.30-0.38ms** | ✅ 130x faster |
 | 200 | < 50ms | **0.57-0.77ms** | ✅ 65x faster |
+
+## 🔄 Comparison
+
+| Feature | Traditional MCP | Awesome Plugin |
+|---------|----------------|----------------|
+| Token usage (500 tools) | 150,000 | 7,500 (95% less) |
+| Plugin discovery | Manual | Automatic (GitHub) |
+| Tool selection | Load all | Intelligent (BM25) |
+| Quality evaluation | None | 0-100 scoring |
+| Search speed | N/A | <1ms |
+| Usage learning | No | Yes |
+
+## 🌍 Real-World Use Cases
+
+### 1. Multi-Tool Development Environment
+Connect filesystem, git, slack, and database MCP servers - only relevant tools load based on your query.
+
+### 2. AI Agent with 500+ Tools
+Deploy AI agents with access to hundreds of tools without token bloat.
+
+### 3. Plugin Discovery & Evaluation
+Automatically find and evaluate MCP plugins from GitHub before installing.
+
+**See [Examples](docs/examples/) for detailed tutorials.**
 
 ## 🚀 Quick Start
 
@@ -168,6 +194,26 @@ npx tsx tests/benchmark.ts
      │        │        │
   [MCP1]  [MCP2]  [MCP3...N]
 ```
+
+## 📖 Documentation
+
+### English Documentation
+- [API Reference](docs/api-reference.md) - Complete API documentation
+- [Examples](docs/examples/) - Usage examples and tutorials
+- [Troubleshooting](docs/troubleshooting.md) - Common issues and solutions
+- [FAQ](docs/faq.md) - Frequently asked questions
+- [Architecture](docs/architecture.md) - Deep dive into architecture *(coming soon)*
+- [Configuration](docs/configuration.md) - Configuration options *(coming soon)*
+- [Performance Tuning](docs/performance-tuning.md) - Optimization guide *(coming soon)*
+- [Contributing](CONTRIBUTING.md) - How to contribute
+- [Changelog](CHANGELOG.md) - Version history
+
+### 한국어 문서 (Korean Documentation)
+- [변경 로그](CHANGELOG-KO.md)
+- [기여 가이드](CONTRIBUTING-KO.md)
+- [문제 해결 가이드](docs/troubleshooting-ko.md) *(coming soon)*
+- [FAQ (한글)](docs/faq-ko.md) *(coming soon)*
+- [테스트 보고서](TEST-REPORT-KO.md)
 
 ## 🎓 How It Works
 
