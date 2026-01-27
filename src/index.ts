@@ -2,6 +2,7 @@
 export { AwesomePluginGateway, type MCPServerConfig, type ToolMetadata, type GatewayOptions } from './core/gateway.js';
 export { SessionManager, type Session } from './core/session-manager.js';
 export { ToolLoader, type LoadedToolsResult, type ToolLoadingStrategy } from './core/tool-loader.js';
+export { MCPClient, type MCPClientOptions } from './core/mcp-client.js';
 
 // Search exports
 export { BM25Indexer, type SearchResult, type IndexedDocument, type BM25IndexerOptions } from './search/bm25-indexer.js';

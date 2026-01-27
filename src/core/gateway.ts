@@ -9,6 +9,7 @@ import { SessionManager } from './session-manager.js';
 import { ToolLoader } from './tool-loader.js';
 import { QueryProcessor } from '../search/query-processor.js';
 import { MetadataStore } from '../storage/metadata-store.js';
+import { MCPClient } from './mcp-client.js';
 
 export interface MCPServerConfig {
   id: string;
@@ -37,6 +38,7 @@ export class AwesomePluginGateway {
   private queryProcessor: QueryProcessor;
   private metadataStore: MetadataStore;
   private connectedServers: Map<string, MCPServerConfig>;
+  private mcpClients: Map<string, MCPClient>;
   private availableTools: Map<string, ToolMetadata>;
   private enableToolSearch: boolean;
   private maxLayer2Tools: number;
@@ -61,6 +63,7 @@ export class AwesomePluginGateway {
       filepath: options.dbPath || ':memory:',
     });
     this.connectedServers = new Map();
+    this.mcpClients = new Map();
     this.availableTools = new Map();
     this.enableToolSearch = options.enableToolSearch ?? true;
     this.maxLayer2Tools = options.maxLayer2Tools ?? 15;
@@ -105,29 +108,33 @@ export class AwesomePluginGateway {
       this.metadataStore.updateToolUsage(toolName);
 
       // Forward the tool call to the appropriate MCP server
-      // TODO: Implement actual tool forwarding to connected servers
+      const client = this.mcpClients.get(toolMetadata.serverId);
+      if (!client) {
+        throw new Error(`MCP server not connected: ${toolMetadata.serverId}`);
+      }
+
       const startTime = performance.now();
+      let success = true;
+      let result;
 
-      // Simulated tool execution
-      const result = {
-        content: [
-          {
-            type: 'text' as const,
-            text: `Tool ${toolName} called with arguments: ${JSON.stringify(request.params.arguments)}`,
-          },
-        ],
-      };
+      try {
+        result = await client.callTool(toolName, request.params.arguments || {});
+      } catch (error: any) {
+        success = false;
+        console.error(`Tool call failed (${toolName}):`, error);
+        throw error;
+      } finally {
+        const responseTime = performance.now() - startTime;
 
-      const responseTime = performance.now() - startTime;
-
-      // Log usage
-      this.metadataStore.addUsageLog({
-        timestamp: Date.now(),
-        toolName,
-        query: JSON.stringify(request.params.arguments),
-        success: true,
-        responseTime,
-      });
+        // Log usage
+        this.metadataStore.addUsageLog({
+          timestamp: Date.now(),
+          toolName,
+          query: JSON.stringify(request.params.arguments),
+          success,
+          responseTime,
+        });
+      }
 
       return result;
     });
@@ -151,9 +158,19 @@ export class AwesomePluginGateway {
         qualityScore: 0, // Will be updated later
       });
 
-      // TODO: Implement actual server connection using child_process
-      // For now, we'll simulate a connection
-      console.log(`Connected to MCP server: ${config.name} (${config.id})`);
+      // Create and connect MCP client
+      const client = new MCPClient(config, {
+        onError: (error) => {
+          console.error(`MCP client error (${config.id}):`, error);
+        },
+        onDisconnect: () => {
+          console.log(`MCP client disconnected (${config.id})`);
+          this.mcpClients.delete(config.id);
+        },
+      });
+
+      await client.connect();
+      this.mcpClients.set(config.id, client);
 
       // Register tools from this server
       await this.registerServerTools(config.id);
@@ -167,67 +184,44 @@ export class AwesomePluginGateway {
    * Register tools from a connected MCP server
    */
   private async registerServerTools(serverId: string): Promise<void> {
-    // TODO: Call tools/list on the connected server to get available tools
-    // For now, we'll add some mock tools for demonstration
-    const mockTools: ToolMetadata[] = [
-      {
-        name: `${serverId}_send_message`,
-        description: `Send a message using ${serverId}`,
-        inputSchema: {
-          type: 'object',
-          properties: {
-            message: {
-              type: 'string',
-              description: 'Message content',
-            },
-            channel: {
-              type: 'string',
-              description: 'Target channel',
-            },
-          },
-          required: ['message'],
-        },
-        serverId,
-        category: 'communication',
-        keywords: ['send', 'message', 'chat'],
-      },
-      {
-        name: `${serverId}_read_file`,
-        description: `Read a file using ${serverId}`,
-        inputSchema: {
-          type: 'object',
-          properties: {
-            path: {
-              type: 'string',
-              description: 'File path',
-            },
-          },
-          required: ['path'],
-        },
-        serverId,
-        category: 'filesystem',
-        keywords: ['read', 'file', 'fs'],
-      },
-    ];
-
-    // Register tools in memory
-    for (const tool of mockTools) {
-      this.availableTools.set(tool.name, tool);
+    const client = this.mcpClients.get(serverId);
+    if (!client) {
+      throw new Error(`MCP client not found for server: ${serverId}`);
     }
 
-    // Register tools in ToolLoader (for BM25 search)
-    this.toolLoader.registerTools(mockTools);
+    try {
+      // Get tools from the MCP server
+      const tools = await client.listTools();
 
-    // Save tools to metadata store
-    this.metadataStore.addTools(mockTools);
+      // Register tools in memory
+      for (const tool of tools) {
+        this.availableTools.set(tool.name, tool);
+      }
 
-    console.log(`Registered ${mockTools.length} tools from server: ${serverId}`);
+      // Register tools in ToolLoader (for BM25 search)
+      this.toolLoader.registerTools(tools);
+
+      // Save tools to metadata store
+      this.metadataStore.addTools(tools);
+
+      console.log(`Registered ${tools.length} tools from server: ${serverId}`);
+    } catch (error) {
+      console.error(`Failed to register tools from server ${serverId}:`, error);
+      throw error;
+    }
   }
 
   /**
    * Disconnect from an MCP server and remove its tools
    */
   async disconnectServer(serverId: string): Promise<void> {
+    // Disconnect MCP client
+    const client = this.mcpClients.get(serverId);
+    if (client) {
+      await client.disconnect();
+      this.mcpClients.delete(serverId);
+    }
+
     // Remove all tools from this server
     const removedTools: string[] = [];
     for (const [toolName, metadata] of this.availableTools.entries()) {
@@ -303,6 +297,12 @@ export class AwesomePluginGateway {
    * Stop the gateway server
    */
   async stop(): Promise<void> {
+    // Disconnect all MCP clients
+    for (const client of this.mcpClients.values()) {
+      await client.disconnect();
+    }
+    this.mcpClients.clear();
+
     // Disconnect all servers
     for (const serverId of this.connectedServers.keys()) {
       await this.disconnectServer(serverId);
