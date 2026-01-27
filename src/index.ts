@@ -10,6 +10,11 @@ export { QueryProcessor, type QueryIntent, type ProcessedQuery, type ToolCategor
 // Storage exports
 export { MetadataStore, type PluginRecord, type ToolRecord, type UsageLogRecord, type MetadataStoreOptions } from './storage/metadata-store.js';
 
+// Discovery exports
+export { GitHubExplorer, type GitHubRepoInfo, type SearchOptions, type ExplorerOptions } from './discovery/github-explorer.js';
+export { QualityEvaluator, type QualityScore, type EvaluationOptions } from './discovery/quality-evaluator.js';
+export { PluginInstaller, type InstallOptions, type InstallResult } from './discovery/plugin-installer.js';
+
 // Main entry point for running as MCP server
 async function main() {
   const { AwesomePluginGateway } = await import('./core/gateway.js');

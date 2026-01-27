@@ -11,7 +11,8 @@
       "Bash(npm search:*)",
       "Bash(npm view:*)",
       "Bash(node:*)",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Complete Phase 2 - BM25 Tool Search Engine\n\nImplements intelligent tool search with BM25 algorithm achieving sub-millisecond performance.\n\nKey Features:\n- BM25 search indexer with Okapi BM25 \\(k1=1.2, b=0.75\\)\n- Query processor with intent classification \\(action + domain + entities\\)\n- SQLite metadata store for persistent tool/plugin data\n- Usage learning with logarithmic boost for frequently used tools\n- Query enhancement with synonyms and category keywords\n\nPerformance Results:\n- 50 tools: 0.16-0.45ms \\(110x faster than 50ms target\\)\n- 100 tools: 0.30-0.38ms \\(130x faster than target\\)\n- 200 tools: 0.57-0.77ms \\(65x faster than target\\)\n\nTechnical Changes:\n- Created src/search/query-processor.ts for intent analysis\n- Enhanced src/storage/metadata-store.ts with proper DB options handling\n- Updated src/core/gateway.ts to integrate query processor\n- Added comprehensive benchmark suite in tests/benchmark.ts\n- Installed tsx for TypeScript test execution\n- Fixed better-sqlite3 options compatibility\n\nPhase 2 Complete ✅\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }
