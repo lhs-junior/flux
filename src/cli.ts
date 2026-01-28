@@ -27,7 +27,7 @@ function getRelativeTime(date: Date): string {
 program
   .name('awesome-plugin')
   .description('Awesome MCP Meta Plugin - Intelligent tool selection and auto-discovery')
-  .version('1.1.0');
+  .version('1.2.0');
 
 program
   .command('start')

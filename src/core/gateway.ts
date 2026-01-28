@@ -61,7 +61,7 @@ export class AwesomePluginGateway {
     this.server = new Server(
       {
         name: 'awesome-plugin',
-        version: '1.1.0',
+        version: '1.2.0',
       },
       {
         capabilities: {
