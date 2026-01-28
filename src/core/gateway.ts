@@ -3,41 +3,18 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
-  Tool,
 } from '@modelcontextprotocol/sdk/types.js';
 import { SessionManager } from './session-manager.js';
 import { ToolLoader } from './tool-loader.js';
 import { QueryProcessor } from '../search/query-processor.js';
 import { MetadataStore } from '../storage/metadata-store.js';
-import { MCPClient } from './mcp-client.js';
-import { MemoryManager } from '../features/memory/memory-manager.js';
-import { AgentOrchestrator } from '../features/agents/agent-orchestrator.js';
-import { PlanningManager } from '../features/planning/planning-manager.js';
-import { TDDManager } from '../features/tdd/tdd-manager.js';
-import { GuideManager } from '../features/guide/guide-manager.js';
-import { initializeGuides } from '../features/guide/seed-guides.js';
-import { ScienceManager } from '../features/science/index.js';
+import { FeatureCoordinator } from './feature-coordinator.js';
+import { MCPServerManager } from './mcp-server-manager.js';
+import { ToolSearchEngine } from './tool-search-engine.js';
 import logger from '../utils/logger.js';
+import type { MCPServerConfig, ToolMetadata, GatewayOptions } from './types.js';
 
-export interface MCPServerConfig {
-  id: string;
-  name: string;
-  command: string;
-  args?: string[];
-  env?: Record<string, string>;
-}
-
-export interface ToolMetadata extends Tool {
-  serverId: string;
-  category?: string;
-  keywords?: string[];
-}
-
-export interface GatewayOptions {
-  dbPath?: string;
-  enableToolSearch?: boolean;
-  maxLayer2Tools?: number;
-}
+export type { MCPServerConfig, ToolMetadata, GatewayOptions } from './types.js';
 
 export class AwesomePluginGateway {
   private server: Server;
@@ -45,17 +22,38 @@ export class AwesomePluginGateway {
   private toolLoader: ToolLoader;
   private queryProcessor: QueryProcessor;
   private metadataStore: MetadataStore;
-  private memoryManager: MemoryManager;
-  private agentOrchestrator: AgentOrchestrator;
-  private planningManager: PlanningManager;
-  private tddManager: TDDManager;
-  private guideManager: GuideManager;
-  private scienceManager: ScienceManager;
-  private connectedServers: Map<string, MCPServerConfig>;
-  private mcpClients: Map<string, MCPClient>;
+  private featureCoordinator: FeatureCoordinator;
+  private mcpServerManager: MCPServerManager;
+  private toolSearchEngine: ToolSearchEngine;
   private availableTools: Map<string, ToolMetadata>;
   private enableToolSearch: boolean;
   private maxLayer2Tools: number;
+
+  // Expose individual managers for backward compatibility with tests
+  // These are getters that proxy to the FeatureCoordinator
+  get memoryManager() {
+    return this.featureCoordinator.getMemoryManager();
+  }
+
+  get agentOrchestrator() {
+    return this.featureCoordinator.getAgentOrchestrator();
+  }
+
+  get planningManager() {
+    return this.featureCoordinator.getPlanningManager();
+  }
+
+  get tddManager() {
+    return this.featureCoordinator.getTddManager();
+  }
+
+  get guideManager() {
+    return this.featureCoordinator.getGuideManager();
+  }
+
+  get scienceManager() {
+    return this.featureCoordinator.getScienceManager();
+  }
 
   constructor(options: GatewayOptions = {}) {
     this.server = new Server(
@@ -76,56 +74,38 @@ export class AwesomePluginGateway {
     this.metadataStore = new MetadataStore({
       filepath: options.dbPath || ':memory:',
     });
-    this.memoryManager = new MemoryManager(options.dbPath || ':memory:');
-    this.planningManager = new PlanningManager(options.dbPath || ':memory:');
-    this.tddManager = new TDDManager(options.dbPath || ':memory:');
 
-    // Initialize AgentOrchestrator with full manager integration
-    this.agentOrchestrator = new AgentOrchestrator(options.dbPath || ':memory:', {
-      planningManager: this.planningManager,
-      memoryManager: this.memoryManager,
-      tddManager: this.tddManager,
+    // Initialize FeatureCoordinator (manages all internal features)
+    this.featureCoordinator = new FeatureCoordinator({
+      dbPath: options.dbPath || ':memory:',
     });
 
-    // Initialize GuideManager with cross-feature integration
-    this.guideManager = new GuideManager(options.dbPath || ':memory:', {
-      memoryManager: this.memoryManager,
-      planningManager: this.planningManager,
-    });
-
-    // Initialize ScienceManager with cross-feature integration
-    this.scienceManager = new ScienceManager({
-      memoryManager: this.memoryManager,
-      planningManager: this.planningManager,
-    });
-
-    // Initialize guides from seed files if database is empty
-    this.initializeGuidesIfNeeded();
-
-    this.connectedServers = new Map();
-    this.mcpClients = new Map();
     this.availableTools = new Map();
     this.enableToolSearch = options.enableToolSearch ?? true;
     this.maxLayer2Tools = options.maxLayer2Tools ?? 15;
 
-    // Register internal tools (memory, agents, planning)
+    // Initialize MCPServerManager (manages external MCP servers)
+    this.mcpServerManager = new MCPServerManager({
+      metadataStore: this.metadataStore,
+      toolLoader: this.toolLoader,
+      availableTools: this.availableTools,
+    });
+
+    // Initialize ToolSearchEngine (manages tool search with BM25)
+    this.toolSearchEngine = new ToolSearchEngine(
+      this.queryProcessor,
+      this.toolLoader,
+      this.availableTools,
+      {
+        maxResults: this.maxLayer2Tools,
+        enableToolSearch: this.enableToolSearch,
+      }
+    );
+
+    // Register internal tools (memory, agents, planning, tdd, guide, science)
     this.registerInternalTools();
 
     this.setupHandlers();
-  }
-
-  /**
-   * Initialize guides from seed files if database is empty
-   */
-  private async initializeGuidesIfNeeded(): Promise<void> {
-    try {
-      // Use the GuideManager's store and indexer via proper accessors
-      const store = this.guideManager.getStore();
-      const indexer = this.guideManager.getIndexer();
-      await initializeGuides(store, indexer);
-    } catch (error) {
-      logger.error('Failed to initialize guides:', error);
-    }
   }
 
   /**
@@ -133,91 +113,29 @@ export class AwesomePluginGateway {
    */
   private registerInternalTools(): void {
     // Register the internal plugins in metadata store
-    this.metadataStore.addPlugin({
-      id: 'internal:memory',
-      name: 'Internal Memory Management',
-      command: 'internal',
-      qualityScore: 100,
-    });
-
-    this.metadataStore.addPlugin({
-      id: 'internal:agents',
-      name: 'Internal Agent Orchestration',
-      command: 'internal',
-      qualityScore: 100,
-    });
-
-    this.metadataStore.addPlugin({
-      id: 'internal:planning',
-      name: 'Internal Planning & TODO Tracking',
-      command: 'internal',
-      qualityScore: 100,
-    });
-
-    this.metadataStore.addPlugin({
-      id: 'internal:tdd',
-      name: 'Internal TDD Workflow',
-      command: 'internal',
-      qualityScore: 100,
-    });
-
-    this.metadataStore.addPlugin({
-      id: 'internal:guide',
-      name: 'Internal Guide System',
-      command: 'internal',
-      qualityScore: 100,
-    });
-
-    this.metadataStore.addPlugin({
-      id: 'internal:science',
-      name: 'Internal Science Tools',
-      command: 'internal',
-      qualityScore: 100,
-    });
-
-    // Register memory management tools
-    const memoryTools = this.memoryManager.getToolDefinitions();
-    for (const tool of memoryTools) {
-      this.availableTools.set(tool.name, tool);
+    const pluginRegistrations = this.featureCoordinator.getInternalPluginRegistrations();
+    for (const plugin of pluginRegistrations) {
+      this.metadataStore.addPlugin({
+        id: plugin.id,
+        name: plugin.name,
+        command: 'internal',
+        qualityScore: 100,
+      });
     }
 
-    // Register agent orchestration tools
-    const agentTools = this.agentOrchestrator.getToolDefinitions();
-    for (const tool of agentTools) {
-      this.availableTools.set(tool.name, tool);
-    }
+    // Get all tool definitions from feature coordinator
+    const allTools = this.featureCoordinator.getAllToolDefinitions();
 
-    // Register planning tools
-    const planningTools = this.planningManager.getToolDefinitions();
-    for (const tool of planningTools) {
-      this.availableTools.set(tool.name, tool);
-    }
-
-    // Register TDD tools
-    const tddTools = this.tddManager.getToolDefinitions();
-    for (const tool of tddTools) {
-      this.availableTools.set(tool.name, tool);
-    }
-
-    // Register guide tools
-    const guideTools = this.guideManager.getToolDefinitions();
-    for (const tool of guideTools) {
-      this.availableTools.set(tool.name, tool);
-    }
-
-    // Register science tools
-    const scienceTools = this.scienceManager.getToolDefinitions();
-    for (const tool of scienceTools) {
+    // Register in available tools
+    for (const tool of allTools) {
       this.availableTools.set(tool.name, tool);
     }
 
     // Register in ToolLoader for BM25 search
-    this.toolLoader.registerTools([...memoryTools, ...agentTools, ...planningTools, ...tddTools, ...guideTools, ...scienceTools]);
+    this.toolLoader.registerTools(allTools);
 
     // Save to metadata store
-    this.metadataStore.addTools([...memoryTools, ...agentTools, ...planningTools, ...tddTools, ...guideTools, ...scienceTools]);
-
-    logger.info(`Registered ${memoryTools.length} memory + ${agentTools.length} agent + ${planningTools.length} planning + ${tddTools.length} tdd + ${guideTools.length} guide + ${scienceTools.length} science tools`);
+    this.metadataStore.addTools(allTools);
   }
 
   private setupHandlers(): void {
@@ -262,21 +180,20 @@ export class AwesomePluginGateway {
 
       try {
         // Route to internal features first
-        if (toolMetadata.serverId === 'internal:memory') {
-          result = await this.memoryManager.handleToolCall(toolName, request.params.arguments || {});
-        } else if (toolMetadata.serverId === 'internal:agents') {
-          result = await this.agentOrchestrator.handleToolCall(toolName, request.params.arguments || {});
-        } else if (toolMetadata.serverId === 'internal:planning') {
-          result = await this.planningManager.handleToolCall(toolName, request.params.arguments || {});
-        } else if (toolMetadata.serverId === 'internal:tdd') {
-          result = await this.tddManager.handleToolCall(toolName, request.params.arguments || {});
-        } else if (toolMetadata.serverId === 'internal:guide') {
-          result = await this.guideManager.handleToolCall(toolName, request.params.arguments || {});
-        } else if (toolMetadata.serverId === 'internal:science') {
-          result = await this.scienceManager.handleToolCall(toolName, request.params.arguments || {});
+        if (this.featureCoordinator.isInternalFeature(toolMetadata.serverId)) {
+          const internalResult = this.featureCoordinator.routeToolCall(
+            toolMetadata.serverId,
+            toolName,
+            (request.params.arguments || {}) as Record<string, unknown>
+          );
+          if (internalResult !== null) {
+            result = await internalResult;
+          } else {
+            throw new Error(`Unknown internal feature: ${toolMetadata.serverId}`);
+          }
         } else {
           // Forward to external MCP server
-          const client = this.mcpClients.get(toolMetadata.serverId);
+          const client = this.mcpServerManager.getClient(toolMetadata.serverId);
           if (!client) {
             throw new Error(`MCP server not connected: ${toolMetadata.serverId}`);
           }
@@ -307,138 +224,22 @@ export class AwesomePluginGateway {
    * Connect to an MCP server and register its tools
    */
   async connectToServer(config: MCPServerConfig): Promise<void> {
-    try {
-      // Store server configuration
-      this.connectedServers.set(config.id, config);
-
-      // Save to metadata store
-      this.metadataStore.addPlugin({
-        id: config.id,
-        name: config.name,
-        command: config.command,
-        args: config.args?.join(' '),
-        env: config.env ? JSON.stringify(config.env) : undefined,
-        qualityScore: 0, // Will be updated later
-      });
-
-      // Create and connect MCP client
-      const client = new MCPClient(config, {
-        onError: (error) => {
-          logger.error(`MCP client error (${config.id}):`, error);
-        },
-        onDisconnect: () => {
-          logger.info(`MCP client disconnected (${config.id})`);
-          this.mcpClients.delete(config.id);
-        },
-      });
-
-      await client.connect();
-      this.mcpClients.set(config.id, client);
-
-      // Register tools from this server
-      await this.registerServerTools(config.id);
-    } catch (error) {
-      // Connection failed - clean up
-      this.connectedServers.delete(config.id);
-      this.mcpClients.delete(config.id);
-      logger.error(`Failed to connect to server ${config.name}:`, error);
-      throw error;
-    }
+    return this.mcpServerManager.connectToServer(config);
   }
 
-  /**
-   * Register tools from a connected MCP server
-   */
-  private async registerServerTools(serverId: string): Promise<void> {
-    const client = this.mcpClients.get(serverId);
-    if (!client) {
-      throw new Error(`MCP client not found for server: ${serverId}`);
-    }
-
-    try {
-      // Get tools from the MCP server
-      const tools = await client.listTools();
-
-      // Register tools in memory
-      for (const tool of tools) {
-        this.availableTools.set(tool.name, tool);
-      }
-
-      // Register tools in ToolLoader (for BM25 search)
-      this.toolLoader.registerTools(tools);
-
-      // Save tools to metadata store
-      this.metadataStore.addTools(tools);
-
-      logger.info(`Registered ${tools.length} tools from server: ${serverId}`);
-    } catch (error) {
-      logger.error(`Failed to register tools from server ${serverId}:`, error);
-      throw error;
-    }
-  }
 
   /**
    * Disconnect from an MCP server and remove its tools
    */
   async disconnectServer(serverId: string): Promise<void> {
-    // Disconnect MCP client
-    const client = this.mcpClients.get(serverId);
-    if (client) {
-      await client.disconnect();
-      this.mcpClients.delete(serverId);
-    }
-
-    // Remove all tools from this server
-    const removedTools: string[] = [];
-    for (const [toolName, metadata] of this.availableTools.entries()) {
-      if (metadata.serverId === serverId) {
-        this.availableTools.delete(toolName);
-        this.toolLoader.unregisterTool(toolName);
-        removedTools.push(toolName);
-      }
-    }
-
-    // Remove from metadata store
-    this.metadataStore.removeToolsByServer(serverId);
-    this.metadataStore.removePlugin(serverId);
-
-    this.connectedServers.delete(serverId);
-    logger.info(`Disconnected server: ${serverId}, removed ${removedTools.length} tools`);
+    return this.mcpServerManager.disconnectServer(serverId);
   }
 
   /**
    * Search for tools using BM25 and query processing
    */
   async searchTools(query: string, options?: { limit?: number }): Promise<ToolMetadata[]> {
-    const limit = options?.limit || this.maxLayer2Tools;
-
-    // If query is empty, return all tools up to the limit
-    if (!query || !query.trim()) {
-      return Array.from(this.availableTools.values()).slice(0, limit);
-    }
-
-    // Process query to extract intent
-    const processedQuery = this.queryProcessor.processQuery(query);
-
-    logger.debug('Query processed:', {
-      original: processedQuery.originalQuery,
-      intent: processedQuery.intent,
-      keywords: processedQuery.keywords,
-    });
-
-    // Use enhanced query for better search results
-    const result = await this.toolLoader.loadTools(processedQuery.enhancedQuery, {
-      maxLayer2: limit,
-    });
-
-    logger.debug('Tool search completed:', {
-      searchMethod: result.strategy.searchMethod,
-      searchTimeMs: result.strategy.searchTimeMs,
-      foundTools: result.relevant.length,
-    });
-
-    // Results already have category and keywords from BM25 indexer
-    return result.relevant;
+    return this.toolSearchEngine.search(query, options);
   }
 
   /**
@@ -449,7 +250,7 @@ export class AwesomePluginGateway {
     const dbStats = this.metadataStore.getStatistics();
 
     return {
-      connectedServers: this.connectedServers.size,
+      connectedServers: this.mcpServerManager.getConnectedServerCount(),
       totalTools: this.availableTools.size,
       toolLoader: toolLoaderStats,
       database: dbStats,
@@ -471,69 +272,11 @@ export class AwesomePluginGateway {
    * Stop the gateway server
    */
   async stop(): Promise<void> {
-    // Disconnect all MCP clients
-    try {
-      for (const client of this.mcpClients.values()) {
-        try {
-          await client.disconnect();
-        } catch (error) {
-          logger.error('Failed to disconnect MCP client:', error);
-        }
-      }
-      this.mcpClients.clear();
-    } catch (error) {
-      logger.error('Failed to clear MCP clients:', error);
-    }
+    // Disconnect all MCP servers
+    await this.mcpServerManager.disconnectAll();
 
-    // Disconnect all servers
-    try {
-      for (const serverId of this.connectedServers.keys()) {
-        try {
-          await this.disconnectServer(serverId);
-        } catch (error) {
-          logger.error(`Failed to disconnect server ${serverId}:`, error);
-        }
-      }
-    } catch (error) {
-      logger.error('Failed to disconnect servers:', error);
-    }
-
-    // Close internal features
-    try {
-      this.memoryManager.close();
-    } catch (error) {
-      logger.error('Failed to close memory manager:', error);
-    }
-
-    try {
-      this.agentOrchestrator.close();
-    } catch (error) {
-      logger.error('Failed to close agent orchestrator:', error);
-    }
-
-    try {
-      this.planningManager.close();
-    } catch (error) {
-      logger.error('Failed to close planning manager:', error);
-    }
-
-    try {
-      this.tddManager.close();
-    } catch (error) {
-      logger.error('Failed to close TDD manager:', error);
-    }
-
-    try {
-      this.guideManager.close();
-    } catch (error) {
-      logger.error('Failed to close guide manager:', error);
-    }
-
-    try {
-      this.scienceManager.close();
-    } catch (error) {
-      logger.error('Failed to close science manager:', error);
-    }
+    // Close internal features via coordinator
+    this.featureCoordinator.close();
 
     // Close database
     try {
