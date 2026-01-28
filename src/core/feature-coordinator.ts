@@ -10,6 +10,8 @@ import { TDDManager } from '../features/tdd/tdd-manager.js';
 import { GuideManager } from '../features/guide/guide-manager.js';
 import { ScienceManager } from '../features/science/index.js';
 import { initializeGuides } from '../features/guide/seed-guides.js';
+import { HooksManager, LifecycleHookType } from '../fusion/implementations/lifecycle-hooks-fusion.js';
+import { DashboardManager } from '../fusion/implementations/dashboard-fusion.js';
 import logger from '../utils/logger.js';
 import type { ToolMetadata } from './types.js';
 
@@ -36,6 +38,8 @@ export class FeatureCoordinator {
   private tddManager: TDDManager;
   private guideManager: GuideManager;
   private scienceManager: ScienceManager;
+  private hooksManager: HooksManager;
+  private dashboardManager: DashboardManager;
 
   constructor(options: FeatureCoordinatorOptions) {
     const dbPath = options.dbPath || ':memory:';
@@ -62,6 +66,25 @@ export class FeatureCoordinator {
     this.scienceManager = new ScienceManager({
       memoryManager: this.memoryManager,
       planningManager: this.planningManager,
+    });
+
+    // Initialize HooksManager and inject all managers for fusion
+    this.hooksManager = new HooksManager();
+    this.hooksManager.injectManagers({
+      memoryManager: this.memoryManager,
+      planningManager: this.planningManager,
+      tddManager: this.tddManager,
+      agentOrchestrator: this.agentOrchestrator,
+    });
+
+    // Initialize DashboardManager for unified status view
+    this.dashboardManager = new DashboardManager({
+      memoryManager: this.memoryManager,
+      planningManager: this.planningManager,
+      agentOrchestrator: this.agentOrchestrator,
+      tddManager: this.tddManager,
+      guideManager: this.guideManager,
+      scienceManager: this.scienceManager,
     });
 
     // Initialize guides from seed files if database is empty
@@ -111,6 +134,10 @@ export class FeatureCoordinator {
         id: 'internal:science',
         name: 'Internal Science Tools',
       },
+      {
+        id: 'internal:dashboard',
+        name: 'Internal Dashboard Fusion',
+      },
     ];
   }
 
@@ -124,9 +151,10 @@ export class FeatureCoordinator {
     const tddTools = this.tddManager.getToolDefinitions();
     const guideTools = this.guideManager.getToolDefinitions();
     const scienceTools = this.scienceManager.getToolDefinitions();
+    const dashboardTools = this.getDashboardToolDefinitions();
 
     logger.info(
-      `FeatureCoordinator: ${memoryTools.length} memory + ${agentTools.length} agent + ${planningTools.length} planning + ${tddTools.length} tdd + ${guideTools.length} guide + ${scienceTools.length} science tools`
+      `FeatureCoordinator: ${memoryTools.length} memory + ${agentTools.length} agent + ${planningTools.length} planning + ${tddTools.length} tdd + ${guideTools.length} guide + ${scienceTools.length} science + ${dashboardTools.length} dashboard tools`
     );
 
     return [
@@ -136,6 +164,84 @@ export class FeatureCoordinator {
       ...tddTools,
       ...guideTools,
       ...scienceTools,
+      ...dashboardTools,
+    ];
+  }
+
+  /**
+   * Handle dashboard tool calls
+   */
+  private async handleDashboardToolCall(
+    toolName: string,
+    args: Record<string, unknown>
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      if (toolName === 'dashboard_status') {
+        const format = (args.format as string) || 'full';
+        const status = this.dashboardManager.getUnifiedStatus();
+
+        let output: string;
+        if (format === 'json') {
+          output = JSON.stringify(status, null, 2);
+        } else if (format === 'compact') {
+          output = this.dashboardManager.getCompactSummary(status);
+        } else {
+          output = this.dashboardManager.formatDashboard(status);
+        }
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: output,
+            },
+          ],
+        };
+      }
+
+      throw new Error(`Unknown dashboard tool: ${toolName}`);
+    } catch (error: any) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: false,
+                error: `Dashboard tool error: ${error.message}`,
+              },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Get dashboard tool definitions
+   */
+  private getDashboardToolDefinitions(): ToolMetadata[] {
+    return [
+      {
+        name: 'dashboard_status',
+        description:
+          'Get unified status view of all FLUX features. Shows Memory entries, Planning progress, Agent counts, TDD pass rate, Guide stats, and Science tools. Token-efficient way to see everything at once!',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            format: {
+              type: 'string',
+              enum: ['full', 'compact', 'json'],
+              description: 'Output format: full (ASCII dashboard), compact (summary), or json (raw data)',
+              default: 'full',
+            },
+          },
+        },
+        serverId: 'internal:dashboard',
+        category: 'fusion',
+      },
     ];
   }
 
@@ -150,33 +256,77 @@ export class FeatureCoordinator {
    * Route a tool call to the appropriate internal feature manager
    * Returns null if the serverId is not an internal feature
    */
-  routeToolCall(
+  async routeToolCall(
     serverId: string,
     toolName: string,
     args: Record<string, unknown>
-  ): Promise<unknown> | null {
-    switch (serverId) {
-      case 'internal:memory':
-        return this.memoryManager.handleToolCall(toolName, args);
+  ): Promise<unknown | null> {
+    // Execute PreToolUse hook
+    await this.hooksManager.executeHooks(LifecycleHookType.PreToolUse, {
+      toolName,
+      toolArgs: args,
+      data: { serverId },
+    });
 
-      case 'internal:agents':
-        return this.agentOrchestrator.handleToolCall(toolName, args);
+    let result: unknown = null;
+    let error: Error | undefined;
 
-      case 'internal:planning':
-        return this.planningManager.handleToolCall(toolName, args);
+    try {
+      switch (serverId) {
+        case 'internal:memory':
+          result = await this.memoryManager.handleToolCall(toolName, args);
+          break;
 
-      case 'internal:tdd':
-        return this.tddManager.handleToolCall(toolName, args);
+        case 'internal:agents':
+          result = await this.agentOrchestrator.handleToolCall(toolName, args);
+          break;
 
-      case 'internal:guide':
-        return this.guideManager.handleToolCall(toolName, args);
+        case 'internal:planning':
+          result = await this.planningManager.handleToolCall(toolName, args);
+          break;
 
-      case 'internal:science':
-        return this.scienceManager.handleToolCall(toolName, args);
+        case 'internal:tdd':
+          result = await this.tddManager.handleToolCall(toolName, args);
+          break;
 
-      default:
-        return null;
+        case 'internal:guide':
+          result = await this.guideManager.handleToolCall(toolName, args);
+          break;
+
+        case 'internal:science':
+          result = await this.scienceManager.handleToolCall(toolName, args);
+          break;
+
+        case 'internal:dashboard':
+          result = await this.handleDashboardToolCall(toolName, args);
+          break;
+
+        default:
+          return null;
+      }
+    } catch (err) {
+      error = err instanceof Error ? err : new Error(String(err));
+
+      // Execute ErrorOccurred hook
+      await this.hooksManager.executeHooks(LifecycleHookType.ErrorOccurred, {
+        toolName,
+        toolArgs: args,
+        error,
+        data: { serverId },
+      });
+
+      throw error;
     }
+
+    // Execute PostToolUse hook
+    await this.hooksManager.executeHooks(LifecycleHookType.PostToolUse, {
+      toolName,
+      toolArgs: args,
+      toolResult: result,
+      data: { serverId },
+    });
+
+    return result;
   }
 
   /**
@@ -243,5 +393,13 @@ export class FeatureCoordinator {
 
   getScienceManager(): ScienceManager {
     return this.scienceManager;
+  }
+
+  getHooksManager(): HooksManager {
+    return this.hooksManager;
+  }
+
+  getDashboardManager(): DashboardManager {
+    return this.dashboardManager;
   }
 }

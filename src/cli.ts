@@ -17,6 +17,7 @@ import { PlanningManager } from './features/planning/planning-manager.js';
 import { TDDManager } from './features/tdd/tdd-manager.js';
 import { GuideManager } from './features/guide/guide-manager.js';
 import { ScienceManager } from './features/science/index.js';
+import { FusionEvaluator } from './fusion/fusion-evaluator.js';
 import logger from './utils/logger.js';
 
 const program = new Command();
@@ -1085,7 +1086,8 @@ scienceCmd
 program
   .command('absorbed')
   .description('Show absorption history and progress')
-  .action(async () => {
+  .option('--with-fusion', 'Show fusion potential for absorbed features')
+  .action(async (options: any) => {
     console.log('🧬 Absorption History\n');
 
     // Absorbed projects
@@ -1096,6 +1098,7 @@ program
         date: '2025-01-28',
         description: 'Memory management with BM25 semantic search',
         tools: 4,
+        feature: 'memory',
         improvements: [
           'BM25 search instead of vector DB',
           'SQLite instead of file storage',
@@ -1108,6 +1111,7 @@ program
         date: '2025-01-28',
         description: 'Multi-agent orchestration with parallel execution',
         tools: 5,
+        feature: 'agents',
         improvements: [
           'Parallel async execution',
           'Real-time progress monitoring',
@@ -1120,6 +1124,7 @@ program
         date: '2025-01-28',
         description: 'TODO tracking with dependency management',
         tools: 3,
+        feature: 'planning',
         improvements: [
           'File storage → SQLite with foreign keys',
           'BM25 semantic search integration',
@@ -1134,6 +1139,7 @@ program
         date: '2025-01-28',
         description: 'TDD workflow enforcement (38k+ stars!)',
         tools: 4,
+        feature: 'tdd',
         improvements: [
           'Full framework → Focused TDD tools',
           'Code deletion → Warnings only',
@@ -1149,6 +1155,7 @@ program
         date: '2025-01-28',
         description: 'Specialist agent types (top 10 from 72)',
         tools: 10,
+        feature: 'agents',
         improvements: [
           'specialist_researcher, specialist_analyst, specialist_strategist',
           'specialist_designer, specialist_coder, specialist_teacher',
@@ -1165,6 +1172,7 @@ program
         description: 'Self-documenting guide system (inspired by claude-code-guide)',
         tools: 2,
         guides: 5,
+        feature: 'guide',
         improvements: [
           'guide_search, guide_tutorial - New guide tools',
           '5 initial guides: Getting Started, Building with awesome-plugin, Absorption Deep Dive, Memory Best Practices, TDD Mastery',
@@ -1180,6 +1188,7 @@ program
         date: '2026-01-28',
         description: 'Data science, statistical analysis, and ML integration',
         tools: 6,
+        feature: 'science',
         improvements: [
           'science_setup, science_analyze, science_visualize - Data analysis tools',
           'science_stats - Statistical tests (t-test, ANOVA, correlation, regression)',
@@ -1214,7 +1223,40 @@ program
 
     console.log('\n⏳ Next absorption (v0.7.0 - Future):');
     console.log('   Additional integration tools and features');
-    console.log('   Expected: +4-8 tools\n');
+    console.log('   Expected: +4-8 tools');
+
+    // Show fusion potential if requested
+    if (options.withFusion) {
+      console.log('\n🔗 Fusion Potential Analysis\n');
+
+      const features = ['memory', 'agents', 'planning', 'tdd', 'guide', 'science'];
+      const evaluator = new FusionEvaluator(features);
+
+      // Get top 5 fusion opportunities
+      const topOpportunities = evaluator.getTopOpportunities(5);
+
+      topOpportunities.forEach((potential, index) => {
+        const synergyPercent = Math.round((potential.metrics.synergy / 20) * 100);
+        const totalPercent = Math.round((potential.metrics.total / 80) * 100);
+
+        console.log(`${index + 1}. ${potential.featureA.toUpperCase()} ↔ ${potential.featureB.toUpperCase()}`);
+        console.log(`   Fusion Score: ${potential.metrics.total}/80 (${totalPercent}%)`);
+        console.log(`   Synergy: ${synergyPercent}% | Current Level: ${potential.currentLevel} → Potential: ${potential.potentialLevel}`);
+
+        // Show top opportunity
+        if (potential.opportunities.length > 0) {
+          const topOpp = potential.opportunities[0];
+          console.log(`   💡 ${topOpp?.description}`);
+        }
+
+        console.log(`   📝 ${potential.recommendation}`);
+        console.log('');
+      });
+
+      console.log('💡 Tip: Use "flux fusion-matrix" for full feature compatibility matrix\n');
+    } else {
+      console.log('\n💡 Tip: Use "flux absorbed --with-fusion" to see fusion opportunities\n');
+    }
   });
 
 program
@@ -1276,6 +1318,109 @@ program
     });
 
     console.log('\n💡 Note: Voting data is not persisted yet. This is a preview feature.\n');
+  });
+
+program
+  .command('fusion-matrix')
+  .description('Show fusion compatibility matrix for all features')
+  .option('--metric <type>', 'Metric to display (synergy, automation, performance, user-value, total)', 'total')
+  .option('--json', 'Output as JSON')
+  .action(async (options: any) => {
+    const features = ['memory', 'agents', 'planning', 'tdd', 'guide', 'science'];
+    const evaluator = new FusionEvaluator(features);
+
+    if (options.json) {
+      // JSON output
+      const allPairs = evaluator.evaluateAllPairs();
+      outputResult(allPairs, true);
+      return;
+    }
+
+    // ASCII matrix output
+    console.log('🔗 Feature Fusion Matrix\n');
+
+    const metricType = options.metric.toLowerCase();
+    const metricLabel = metricType === 'total' ? 'Total Score' :
+                        metricType === 'synergy' ? 'Synergy' :
+                        metricType === 'automation' ? 'Automation' :
+                        metricType === 'performance' ? 'Performance' :
+                        metricType === 'user-value' ? 'User Value' : 'Total Score';
+
+    console.log(`Metric: ${metricLabel}\n`);
+
+    // Build matrix
+    const matrix: number[][] = [];
+    for (let i = 0; i < features.length; i++) {
+      matrix[i] = [];
+      for (let j = 0; j < features.length; j++) {
+        if (i === j) {
+          matrix[i]![j] = -1; // Self-reference
+        } else {
+          const potential = evaluator.evaluatePair(features[i]!, features[j]!);
+          let value: number;
+          switch (metricType) {
+            case 'synergy':
+              value = potential.metrics.synergy;
+              break;
+            case 'automation':
+              value = potential.metrics.automation;
+              break;
+            case 'performance':
+              value = potential.metrics.performance;
+              break;
+            case 'user-value':
+              value = potential.metrics.userValue;
+              break;
+            default:
+              value = potential.metrics.total;
+          }
+          matrix[i]![j] = value;
+        }
+      }
+    }
+
+    // Print header
+    const colWidth = 10;
+    process.stdout.write(' '.repeat(colWidth));
+    features.forEach((feature) => {
+      process.stdout.write(feature.substring(0, colWidth - 1).padEnd(colWidth));
+    });
+    console.log('');
+
+    // Print separator
+    console.log('-'.repeat(colWidth + features.length * colWidth));
+
+    // Print rows
+    features.forEach((feature, i) => {
+      process.stdout.write(feature.substring(0, colWidth - 1).padEnd(colWidth));
+      matrix[i]?.forEach((value) => {
+        if (value === -1) {
+          process.stdout.write('-'.padEnd(colWidth));
+        } else {
+          process.stdout.write(value.toString().padEnd(colWidth));
+        }
+      });
+      console.log('');
+    });
+
+    console.log('\n📊 Legend:');
+    if (metricType === 'total') {
+      console.log('  70-80: Exceptional fusion potential');
+      console.log('  60-69: Strong fusion potential');
+      console.log('  45-59: Moderate fusion potential');
+      console.log('  30-44: Limited fusion potential');
+      console.log('  0-29:  Minimal fusion potential');
+    } else {
+      console.log('  15-20: Very High');
+      console.log('  10-14: High');
+      console.log('  5-9:   Medium');
+      console.log('  0-4:   Low');
+    }
+
+    console.log('\n💡 Tips:');
+    console.log('  - Use --metric to change the displayed metric');
+    console.log('  - Run "flux absorbed --with-fusion" to see top opportunities');
+    console.log('  - Use --json for programmatic access\n');
   });
 
 program.parse(process.argv);

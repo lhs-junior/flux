@@ -38,6 +38,28 @@ export {
   type LearningStatus
 } from './features/guide/guide-types.js';
 
+// Fusion exports
+export {
+  type FusionLevel,
+  HookType,
+  type FusionMetrics,
+  type FusionPotential,
+  type FusionOpportunity,
+  type FusionResult,
+  type FusionConfig,
+  type FeatureMetadata,
+  FusionEvaluator,
+  type FusionContext,
+  type FusionHook,
+  type PipelineStage,
+  type ParallelTask,
+  AutoTriggerFusion,
+  SharedContextFusion,
+  PipelineFusion,
+  ParallelFusion,
+  FusionOrchestrator
+} from './fusion/index.js';
+
 // Plugin wrapper exports
 export { getPluginManagers, resetPlugin, loadConfig, type PluginConfig } from './plugin/index.js';
 

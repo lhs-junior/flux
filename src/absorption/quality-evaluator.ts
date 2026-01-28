@@ -1,8 +1,11 @@
 /**
- * QualityEvaluator - 100점 평가 시스템
+ * QualityEvaluator - 120점 평가 시스템 (100점 기본 + 20점 Fusion)
  *
- * 흡수 대상 프로젝트를 평가하여 70점 이상만 흡수합니다.
+ * 흡수 대상 프로젝트를 평가하여 84점 이상(70% of 120)만 흡수합니다.
+ * Fusion 점수는 기존 feature들과의 통합 가능성을 평가합니다.
  */
+
+import { FusionEvaluator } from '../fusion/fusion-evaluator.js';
 
 export interface ProjectInfo {
   name: string;
@@ -30,6 +33,19 @@ export interface QualityScore {
   reasons: string[];
 }
 
+/**
+ * Enhanced Quality Score with Fusion evaluation (120-point system)
+ */
+export interface EnhancedQualityScore extends QualityScore {
+  fusionScore: number; // 0-20점
+  fusionOpportunities: Array<{
+    features: [string, string];
+    potentialScore: number;
+    synergy: number;
+    recommendation: string;
+  }>;
+}
+
 export interface EvaluationContext {
   existingTools: string[]; // 기존 tool 이름들
   existingFeatures: string[]; // 기존 feature 목록 (memory, agent, etc.)
@@ -38,9 +54,11 @@ export interface EvaluationContext {
 
 export class QualityEvaluator {
   private context: EvaluationContext;
+  private fusionEvaluator: FusionEvaluator;
 
   constructor(context: EvaluationContext) {
     this.context = context;
+    this.fusionEvaluator = new FusionEvaluator(context.existingFeatures);
   }
 
   /**
@@ -76,6 +94,40 @@ export class QualityEvaluator {
       grade,
       recommendation,
       reasons,
+    };
+  }
+
+  /**
+   * 프로젝트 평가 with Fusion (120점 만점: 기본 100점 + Fusion 20점)
+   *
+   * 새 프로젝트가 기존 feature들과 어떤 Fusion 가능성을 가지는지 평가합니다.
+   */
+  evaluateWithFusion(project: ProjectInfo): EnhancedQualityScore {
+    // 1. 기존 100점 평가
+    const baseScore = this.evaluate(project);
+
+    // 2. Fusion 평가 (0-20점)
+    const fusionResult = this.evaluateFusionPotential(project);
+
+    // 3. 120점 체계로 통합
+    const total = baseScore.total + fusionResult.fusionScore;
+    const grade = this.calculateGradeFor120(total);
+    const recommendation = this.calculateRecommendationFor120(total);
+
+    // 4. Enhanced reasons (Fusion 정보 포함)
+    const enhancedReasons = [
+      ...baseScore.reasons,
+      ...this.generateFusionReasons(fusionResult),
+    ];
+
+    return {
+      ...baseScore,
+      total,
+      grade,
+      recommendation,
+      reasons: enhancedReasons,
+      fusionScore: fusionResult.fusionScore,
+      fusionOpportunities: fusionResult.fusionOpportunities,
     };
   }
 
@@ -264,7 +316,7 @@ export class QualityEvaluator {
   }
 
   /**
-   * 등급 계산
+   * 등급 계산 (100점 체계)
    */
   private calculateGrade(total: number): 'A' | 'B' | 'C' | 'D' | 'F' {
     if (total >= 90) return 'A';
@@ -275,11 +327,31 @@ export class QualityEvaluator {
   }
 
   /**
-   * 권장 사항 계산
+   * 등급 계산 (120점 체계)
+   */
+  private calculateGradeFor120(total: number): 'A' | 'B' | 'C' | 'D' | 'F' {
+    if (total >= 108) return 'A'; // 90% of 120
+    if (total >= 96) return 'B';  // 80% of 120
+    if (total >= 84) return 'C';  // 70% of 120
+    if (total >= 72) return 'D';  // 60% of 120
+    return 'F';
+  }
+
+  /**
+   * 권장 사항 계산 (100점 체계)
    */
   private calculateRecommendation(total: number): 'approve' | 'consider' | 'reject' {
     if (total >= 80) return 'approve'; // 바로 흡수
     if (total >= 70) return 'consider'; // 신중히 고려
+    return 'reject'; // 흡수 금지
+  }
+
+  /**
+   * 권장 사항 계산 (120점 체계)
+   */
+  private calculateRecommendationFor120(total: number): 'approve' | 'consider' | 'reject' {
+    if (total >= 96) return 'approve';   // 80% of 120 - 바로 흡수
+    if (total >= 84) return 'consider';  // 70% of 120 - 신중히 고려
     return 'reject'; // 흡수 금지
   }
 
@@ -360,5 +432,164 @@ export class QualityEvaluator {
     const candidatePrefix = candidate.split('_')[0];
 
     return existingPrefix === candidatePrefix;
+  }
+
+  /**
+   * Fusion 가능성 평가
+   *
+   * 새 프로젝트가 기존 feature들과 얼마나 잘 통합될 수 있는지 평가합니다.
+   * 반환값: { fusionScore: 0-20, opportunities: [...] }
+   */
+  private evaluateFusionPotential(project: ProjectInfo): {
+    fusionScore: number;
+    fusionOpportunities: EnhancedQualityScore['fusionOpportunities'];
+  } {
+    const opportunities: EnhancedQualityScore['fusionOpportunities'] = [];
+    let totalFusionScore = 0;
+
+    // 프로젝트가 제공하는 기능을 feature 이름으로 변환
+    const projectFeature = this.inferProjectFeature(project);
+
+    // 각 기존 feature와의 Fusion 가능성 평가
+    for (const existingFeature of this.context.existingFeatures) {
+      const fusionPotential = this.fusionEvaluator.evaluatePair(
+        projectFeature,
+        existingFeature
+      );
+
+      // Synergy score를 0-20 스케일로 정규화
+      const normalizedScore = (fusionPotential.metrics.synergy / 20) * 4; // 각 feature당 최대 4점
+
+      if (fusionPotential.metrics.synergy >= 12) {
+        // 의미 있는 synergy가 있는 경우에만 추가
+        opportunities.push({
+          features: [projectFeature, existingFeature],
+          potentialScore: fusionPotential.metrics.total,
+          synergy: fusionPotential.metrics.synergy,
+          recommendation: fusionPotential.recommendation,
+        });
+
+        totalFusionScore += normalizedScore;
+      }
+    }
+
+    // 최대 20점으로 제한
+    const fusionScore = Math.min(Math.round(totalFusionScore), 20);
+
+    // 점수순으로 정렬
+    opportunities.sort((a, b) => b.synergy - a.synergy);
+
+    return {
+      fusionScore,
+      fusionOpportunities: opportunities.slice(0, 5), // 상위 5개만 반환
+    };
+  }
+
+  /**
+   * 프로젝트 정보로부터 feature 이름 추론
+   *
+   * 프로젝트의 description, name 등을 분석하여
+   * 어떤 feature 카테고리에 속하는지 추론합니다.
+   */
+  private inferProjectFeature(project: ProjectInfo): string {
+    const desc = project.description.toLowerCase();
+    const name = project.name.toLowerCase();
+    const combined = `${name} ${desc}`;
+
+    // Memory-related
+    if (
+      combined.includes('memory') ||
+      combined.includes('context') ||
+      combined.includes('recall') ||
+      combined.includes('storage')
+    ) {
+      return 'memory';
+    }
+
+    // Agent-related
+    if (
+      combined.includes('agent') ||
+      combined.includes('autonomous') ||
+      combined.includes('workflow') ||
+      combined.includes('automation')
+    ) {
+      return 'agents';
+    }
+
+    // Planning-related
+    if (
+      combined.includes('plan') ||
+      combined.includes('task') ||
+      combined.includes('todo') ||
+      combined.includes('roadmap')
+    ) {
+      return 'planning';
+    }
+
+    // TDD-related
+    if (
+      combined.includes('test') ||
+      combined.includes('tdd') ||
+      combined.includes('coverage') ||
+      combined.includes('quality')
+    ) {
+      return 'tdd';
+    }
+
+    // Guide-related
+    if (
+      combined.includes('guide') ||
+      combined.includes('tutorial') ||
+      combined.includes('learn') ||
+      combined.includes('documentation')
+    ) {
+      return 'guide';
+    }
+
+    // Science-related
+    if (
+      combined.includes('analysis') ||
+      combined.includes('science') ||
+      combined.includes('research') ||
+      combined.includes('experiment')
+    ) {
+      return 'science';
+    }
+
+    // Default: 가장 일반적인 카테고리
+    return 'general';
+  }
+
+  /**
+   * Fusion 평가 결과를 사람이 읽을 수 있는 reasons로 변환
+   */
+  private generateFusionReasons(fusionResult: {
+    fusionScore: number;
+    fusionOpportunities: EnhancedQualityScore['fusionOpportunities'];
+  }): string[] {
+    const reasons: string[] = [];
+
+    if (fusionResult.fusionScore >= 18) {
+      reasons.push(`🔥 Exceptional fusion potential (${fusionResult.fusionScore}/20)`);
+    } else if (fusionResult.fusionScore >= 15) {
+      reasons.push(`✅ Strong fusion potential (${fusionResult.fusionScore}/20)`);
+    } else if (fusionResult.fusionScore >= 10) {
+      reasons.push(`Good fusion potential (${fusionResult.fusionScore}/20)`);
+    } else if (fusionResult.fusionScore >= 5) {
+      reasons.push(`Moderate fusion potential (${fusionResult.fusionScore}/20)`);
+    } else {
+      reasons.push(`Limited fusion potential (${fusionResult.fusionScore}/20)`);
+    }
+
+    // 상위 3개 opportunity 언급
+    const topOpportunities = fusionResult.fusionOpportunities.slice(0, 3);
+    if (topOpportunities.length > 0) {
+      const featurePairs = topOpportunities
+        .map((opp) => `${opp.features[0]}↔${opp.features[1]}`)
+        .join(', ');
+      reasons.push(`🔗 Best integration opportunities: ${featurePairs}`);
+    }
+
+    return reasons;
   }
 }
