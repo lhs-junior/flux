@@ -16,6 +16,7 @@ import { PlanningManager } from '../features/planning/planning-manager.js';
 import { TDDManager } from '../features/tdd/tdd-manager.js';
 import { GuideManager } from '../features/guide/guide-manager.js';
 import { initializeGuides } from '../features/guide/seed-guides.js';
+import { ScienceManager } from '../features/science/index.js';
 
 export interface MCPServerConfig {
   id: string;
@@ -48,6 +49,7 @@ export class AwesomePluginGateway {
   private planningManager: PlanningManager;
   private tddManager: TDDManager;
   private guideManager: GuideManager;
+  private scienceManager: ScienceManager;
   private connectedServers: Map<string, MCPServerConfig>;
   private mcpClients: Map<string, MCPClient>;
   private availableTools: Map<string, ToolMetadata>;
@@ -58,7 +60,7 @@ export class AwesomePluginGateway {
     this.server = new Server(
       {
         name: 'awesome-plugin',
-        version: '0.5.0',
+        version: '0.6.0',
       },
       {
         capabilities: {
@@ -86,6 +88,12 @@ export class AwesomePluginGateway {
 
     // Initialize GuideManager with cross-feature integration
     this.guideManager = new GuideManager(options.dbPath || ':memory:', {
+      memoryManager: this.memoryManager,
+      planningManager: this.planningManager,
+    });
+
+    // Initialize ScienceManager with cross-feature integration
+    this.scienceManager = new ScienceManager({
       memoryManager: this.memoryManager,
       planningManager: this.planningManager,
     });
@@ -159,6 +167,13 @@ export class AwesomePluginGateway {
       qualityScore: 100,
     });
 
+    this.metadataStore.addPlugin({
+      id: 'internal:science',
+      name: 'Internal Science Tools',
+      command: 'internal',
+      qualityScore: 100,
+    });
+
     // Register memory management tools
     const memoryTools = this.memoryManager.getToolDefinitions();
     for (const tool of memoryTools) {
@@ -189,13 +204,19 @@ export class AwesomePluginGateway {
       this.availableTools.set(tool.name, tool);
     }
 
+    // Register science tools
+    const scienceTools = this.scienceManager.getToolDefinitions();
+    for (const tool of scienceTools) {
+      this.availableTools.set(tool.name, tool);
+    }
+
     // Register in ToolLoader for BM25 search
-    this.toolLoader.registerTools([...memoryTools, ...agentTools, ...planningTools, ...tddTools, ...guideTools]);
+    this.toolLoader.registerTools([...memoryTools, ...agentTools, ...planningTools, ...tddTools, ...guideTools, ...scienceTools]);
 
     // Save to metadata store
-    this.metadataStore.addTools([...memoryTools, ...agentTools, ...planningTools, ...tddTools, ...guideTools]);
+    this.metadataStore.addTools([...memoryTools, ...agentTools, ...planningTools, ...tddTools, ...guideTools, ...scienceTools]);
 
-    console.log(`Registered ${memoryTools.length} memory + ${agentTools.length} agent + ${planningTools.length} planning + ${tddTools.length} tdd + ${guideTools.length} guide tools`);
+    console.log(`Registered ${memoryTools.length} memory + ${agentTools.length} agent + ${planningTools.length} planning + ${tddTools.length} tdd + ${guideTools.length} guide + ${scienceTools.length} science tools`);
   }
 
   private setupHandlers(): void {
@@ -250,6 +271,8 @@ export class AwesomePluginGateway {
           result = await this.tddManager.handleToolCall(toolName, request.params.arguments || {});
         } else if (toolMetadata.serverId === 'internal:guide') {
           result = await this.guideManager.handleToolCall(toolName, request.params.arguments || {});
+        } else if (toolMetadata.serverId === 'internal:science') {
+          result = await this.scienceManager.handleToolCall(toolName, request.params.arguments || {});
         } else {
           // Forward to external MCP server
           const client = this.mcpClients.get(toolMetadata.serverId);
@@ -464,6 +487,7 @@ export class AwesomePluginGateway {
     this.planningManager.close();
     this.tddManager.close();
     this.guideManager.close();
+    this.scienceManager.close();
 
     // Close database
     this.metadataStore.close();

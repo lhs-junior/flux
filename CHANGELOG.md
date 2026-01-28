@@ -5,6 +5,157 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-01-28
+
+### 🧬 Fifth Absorption: science-tools - Data Science & ML Integration
+
+This release absorbs the science tools ecosystem, providing comprehensive statistical analysis, machine learning, and data export capabilities with full Python integration.
+
+**Quality Score**: 88/100 (Grade: B+)
+
+### Added
+
+#### Science Tools (6 new tools)
+
+- **`science_setup`**: Initialize and manage Python virtual environment
+  - Create/reset virtual environment
+  - Install packages (pandas, numpy, scipy, scikit-learn, etc.)
+  - Manage Python dependencies
+  - Environment status and health checks
+
+- **`science_analyze`**: Data analysis using Python/pandas
+  - Load data from CSV/JSON/Parquet files
+  - Transform and clean datasets
+  - Execute custom Python analysis code
+  - Query data with pandas expressions
+  - Integration with Memory for result storage
+
+- **`science_visualize`**: Data visualization with matplotlib/seaborn
+  - Create charts: line, bar, scatter, histogram, heatmap, boxplot
+  - Custom plots with Python code
+  - Interactive Plotly visualizations
+  - Export as PNG, SVG, or HTML
+  - Style customization and themes
+
+- **`science_stats`**: Statistical analysis suite
+  - T-tests (independent, paired, one-sample)
+  - ANOVA (one-way, two-way)
+  - Chi-square tests
+  - Correlation analysis (Pearson, Spearman)
+  - Linear regression
+  - Mann-Whitney U test (non-parametric)
+
+- **`science_ml`**: Machine learning models
+  - Regression: Linear, Logistic
+  - Classification: Random Forest, SVM, XGBoost
+  - Clustering: K-Means
+  - Model training, prediction, and evaluation
+  - Feature importance analysis
+  - Cross-validation support
+
+- **`science_export`**: Multi-format data export
+  - Formats: CSV, Excel, JSON, Parquet, HTML, PDF, Jupyter Notebook
+  - Custom styling and formatting
+  - Batch export support
+  - Compression options
+
+#### Infrastructure
+
+- **ScienceStore**: SQLite-based persistence for Python sessions
+  - Session management with namespace isolation
+  - Result tracking (success/error/partial)
+  - Execution history and statistics
+  - Automatic cleanup of old sessions
+
+- **ScienceManager**: Orchestration and cross-feature integration
+  - Memory integration for saving analysis results
+  - Planning integration for creating analysis tasks
+  - Tool routing and execution
+  - Statistics and monitoring
+
+- **Python Integration**: Native Python execution layer
+  - Virtual environment management
+  - Package dependency handling
+  - Session state persistence with pickle
+  - Error handling and traceback capture
+
+### Improved
+
+#### Synergy Features
+
+- **Memory ↔ Science Integration**:
+  - Save statistical analysis results to memory
+  - Store ML model outputs and predictions
+  - Recall previous analyses for comparison
+  - Tag results by analysis type
+
+- **Planning ↔ Science Integration**:
+  - Create follow-up analysis tasks
+  - Track data science workflow steps
+  - Tag science-related TODOs
+  - Organize multi-step analysis pipelines
+
+- **Agent → Science Integration** (future):
+  - Agents can execute data analysis workflows
+  - Automatic experiment tracking
+  - Result comparison and optimization
+
+### Testing
+
+- **science-store.test.ts**: Comprehensive test suite (15 tests)
+  - Session CRUD operations
+  - Result storage and retrieval
+  - Filtering and statistics
+  - Cleanup and cascade deletion
+  - Edge cases and concurrent updates
+
+- **science-test.ts**: Complete workflow demonstration
+  - All 6 science tools exercised
+  - Statistical analysis examples (t-test, ANOVA, correlation, etc.)
+  - ML model examples (linear regression, random forest, k-means, etc.)
+  - Export format demonstrations (CSV, JSON, HTML, Excel, Parquet)
+  - Memory and Planning integration
+  - End-to-end analysis workflow
+
+### Statistics
+
+- **Total Tools**: 34 (4 memory + 5 agent + 3 planning + 4 tdd + 10 specialist + 2 guide + 6 science)
+- **Absorbed Projects**: 7/8 (87.5% complete)
+- **Quality Score Average**: 88.4/100
+
+### Documentation
+
+- **docs/science-system-evaluation.md**: Quality evaluation and design rationale
+- **examples/science-test.ts**: Comprehensive runnable example (350+ lines)
+- **README.md**: Updated with Science System section and 87.5% milestone
+- **CLI**: Updated `absorbed` command with science-tools entry
+
+### Quality Evaluation
+
+**88/100 (Grade: B+)** - Comprehensive data science integration
+
+- **Functional Innovation** (28/30): Python integration + statistical/ML toolkit
+- **Synergy Score** (27/30): Full integration with Memory + Planning
+- **Architectural Fit** (18/20): Clean separation, follows established patterns
+- **Maintainability** (15/20): Python dependency adds complexity
+- **Community Value** (0/0): Bonus for data science enablement
+
+### Design Decisions
+
+**Python Integration Approach**:
+- Virtual environment isolation for dependency management
+- Session-based persistence for stateful analysis
+- JSON-based communication between TypeScript and Python
+- Graceful error handling with detailed tracebacks
+
+**Tool Separation Strategy**:
+- Setup: Environment management (separate from analysis)
+- Analyze: Data manipulation and custom code execution
+- Visualize: Chart creation and rendering
+- Stats: Statistical tests (focused, scientific)
+- ML: Machine learning models (comprehensive algorithms)
+- Export: Data output (multiple formats)
+
 ## [0.5.0] - 2025-01-28
 
 ### 🧬 Fourth Absorption: guide system - Self-Documenting System

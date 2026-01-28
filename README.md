@@ -5,11 +5,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
 [![Node](https://img.shields.io/badge/Node-%3E%3D18.0.0-green)](https://nodejs.org/)
-[![Absorbed](https://img.shields.io/badge/absorbed-6%2F8-brightgreen)](README.md#-absorption-history)
-[![Tools](https://img.shields.io/badge/tools-28-blue)](README.md#-absorption-history)
+[![Absorbed](https://img.shields.io/badge/absorbed-7%2F8-brightgreen)](README.md#-absorption-history)
+[![Tools](https://img.shields.io/badge/tools-34-blue)](README.md#-absorption-history)
 
-**Status**: ✅ **v0.5.0 - 75% Milestone!**
-**Latest**: guide-system 영감 (2 Guide Tools + 5 Initial Guides + Self-Documenting)
+**Status**: ✅ **v0.6.0 - 87.5% Milestone!**
+**Latest**: science-tools 흡수 (6 Science Tools + Python Integration + Statistical/ML Analysis)
 
 ## 🎯 The Absorption Philosophy
 
@@ -186,9 +186,10 @@ The awesome-plugin combines **7 major feature systems** providing a comprehensiv
 4. **TDD Workflow** (4 tools) - RED-GREEN-REFACTOR cycle enforcement
 5. **Specialist Agents** (10 tools) - Researcher, Analyst, Designer, Coder, Teacher, Writer, Debugger, Reviewer, Optimizer, Strategist
 6. **Guide System** (2 tools) - Interactive documentation and learning paths
-7. **Tool Search** (BM25 engine) - Sub-millisecond intelligent tool discovery
+7. **Scientific Computing** (6 tools) - Python REPL, data analysis, visualization, statistics, ML, export
+8. **Tool Search** (BM25 engine) - Sub-millisecond intelligent tool discovery
 
-**Total: 28 built-in tools + expandable guide library**
+**Total: 34 built-in tools + expandable guide library**
 
 ## 🏗️ Architecture
 
@@ -388,11 +389,17 @@ interface GatewayOptions {
 - [x] **3-Layer Tool Loading**: 95% token reduction
 - [x] **SQLite Persistence**: Stateful storage
 
-### 🔄 Next Absorption
+### 🔄 Absorption Complete
 
-- [ ] **superpowers** (v0.3.0 - Mar 2025): TDD workflow enforcement
+**Progress: 7/8 projects absorbed (87.5%)** 🎉
 
-**Absorption engine running!**
+All major absorptions complete! The awesome-plugin now combines:
+
+- Memory management, agent orchestration, planning, TDD, specialist agents, interactive guides, and scientific computing
+
+**Next Steps**: Continuous improvement, community feedback, and v1.0 stabilization
+
+**Absorption engine: 7 successful integrations!**
 
 ## 🧪 Testing
 

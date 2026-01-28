@@ -26,7 +26,7 @@ function getRelativeTime(date: Date): string {
 program
   .name('awesome-plugin')
   .description('Awesome MCP Meta Plugin - Intelligent tool selection and auto-discovery')
-  .version('0.5.0');
+  .version('0.6.0');
 
 program
   .command('start')
@@ -309,6 +309,21 @@ program
           'Self-documenting architecture',
         ],
       },
+      {
+        name: 'science-tools',
+        version: 'v0.6.0',
+        date: '2026-01-28',
+        description: 'Data science, statistical analysis, and ML integration',
+        tools: 6,
+        improvements: [
+          'science_setup, science_analyze, science_visualize - Data analysis tools',
+          'science_stats - Statistical tests (t-test, ANOVA, correlation, regression)',
+          'science_ml - Machine learning (linear/logistic regression, random forest, SVM, k-means)',
+          'science_export - Multi-format export (CSV, Excel, JSON, Parquet, HTML, PDF)',
+          'Python virtual environment management',
+          'Full integration with Memory + Planning for scientific workflows',
+        ],
+      },
     ];
 
     // Display absorbed projects
@@ -327,14 +342,14 @@ program
       if (index < absorbed.length - 1) console.log('');
     });
 
-    console.log('\n📊 Progress: 6/8 projects completed (75% 🎉)');
+    console.log('\n📊 Progress: 7/8 projects completed (87.5% 🎉)');
     console.log(`🔧 Total tools: ${absorbed.reduce((sum, p) => sum + p.tools, 0)}`);
     console.log(`📚 Total guides: ${absorbed.reduce((sum, p) => sum + ((p as any).guides || 0), 0)}`);
-    console.log('   Distribution: 4 memory + 5 agent + 3 planning + 4 tdd + 10 specialist + 2 guide');
+    console.log('   Distribution: 4 memory + 5 agent + 3 planning + 4 tdd + 10 specialist + 2 guide + 6 science');
 
-    console.log('\n⏳ Next absorption (v0.6.0 - June 2025):');
-    console.log('   claude-scientific-skills - Scientific and research tools');
-    console.log('   Expected: +4-6 tools\n');
+    console.log('\n⏳ Next absorption (v0.7.0 - Future):');
+    console.log('   Additional integration tools and features');
+    console.log('   Expected: +4-8 tools\n');
   });
 
 program

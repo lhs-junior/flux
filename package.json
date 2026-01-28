@@ -1,6 +1,6 @@
 {
   "name": "awesome-plugin",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Awesome MCP Meta Plugin - Intelligent tool selection and auto-discovery for MCP servers",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
