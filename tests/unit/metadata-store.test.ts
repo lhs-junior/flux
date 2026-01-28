@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { MetadataStore } from '../../src/storage/metadata-store.js';
-import type { ToolMetadata } from '../../src/core/gateway.js';
+import type { ToolMetadata } from '../../src/core/types.js';
 import * as fs from 'fs';
 import * as path from 'path';
 

@@ -1,7 +1,7 @@
 import { spawn } from 'child_process';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import type { ToolMetadata } from '../../../core/gateway.js';
+import type { ToolMetadata } from '../../../core/types.js';
 import type { MemoryManager } from '../../memory/memory-manager.js';
 import {
   StatsTestInputSchema,

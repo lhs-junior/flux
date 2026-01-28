@@ -1,6 +1,6 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import type { MCPServerConfig, ToolMetadata } from './gateway.js';
+import type { MCPServerConfig, ToolMetadata } from './types.js';
 import logger from '../utils/logger.js';
 import { extractMCPErrorText } from '../utils/validation.js';
 

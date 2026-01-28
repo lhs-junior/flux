@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { MCPClient } from '../../src/core/mcp-client.js';
-import type { MCPServerConfig } from '../../src/core/gateway.js';
+import type { MCPServerConfig } from '../../src/core/types.js';
 
 describe('MCPClient', () => {
   let client: MCPClient;

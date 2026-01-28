@@ -1,6 +1,6 @@
 import { PlanningStore, TodoRecord, TodoFilter } from './planning-store.js';
 import { BM25Indexer } from '../../search/bm25-indexer.js';
-import type { ToolMetadata } from '../../core/gateway.js';
+import type { ToolMetadata } from '../../core/types.js';
 import {
   PlanningCreateInputSchema,
   PlanningUpdateInputSchema,

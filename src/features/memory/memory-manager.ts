@@ -1,6 +1,6 @@
 import { MemoryStore, MemoryRecord, MemoryFilter } from './memory-store.js';
 import { BM25Indexer } from '../../search/bm25-indexer.js';
-import type { ToolMetadata } from '../../core/gateway.js';
+import type { ToolMetadata } from '../../core/types.js';
 import {
   MemorySaveInputSchema,
   MemoryRecallInputSchema,

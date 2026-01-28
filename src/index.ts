@@ -2,7 +2,8 @@ import path from 'path';
 import os from 'os';
 
 // Core exports
-export { AwesomePluginGateway, type MCPServerConfig, type ToolMetadata, type GatewayOptions } from './core/gateway.js';
+export { AwesomePluginGateway, type GatewayOptions } from './core/gateway.js';
+export { type MCPServerConfig, type ToolMetadata } from './core/types.js';
 export { SessionManager, type Session } from './core/session-manager.js';
 export { ToolLoader, type LoadedToolsResult, type ToolLoadingStrategy } from './core/tool-loader.js';
 export { MCPClient, type MCPClientOptions } from './core/mcp-client.js';

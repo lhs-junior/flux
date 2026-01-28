@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import type { GuideStore } from './guide-store.js';
 import type { BM25Indexer } from '../../search/bm25-indexer.js';
 import type { GuideCategory, DifficultyLevel } from './guide-types.js';
-import type { ToolMetadata } from '../../core/gateway.js';
+import type { ToolMetadata } from '../../core/types.js';
 import logger from '../../utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);

@@ -3,7 +3,7 @@
  * Provides statistical analysis, machine learning, and data export capabilities
  */
 
-import type { ToolMetadata } from '../../core/gateway.js';
+import type { ToolMetadata } from '../../core/types.js';
 import type { MemoryManager } from '../memory/memory-manager.js';
 import type { PlanningManager } from '../planning/planning-manager.js';
 import { scienceStats, getScienceStatsToolDefinition } from './tools/stats.js';

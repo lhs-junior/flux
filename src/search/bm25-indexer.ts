@@ -1,6 +1,6 @@
 import BM25 from 'okapibm25';
 import type { BMConstants } from 'okapibm25';
-import type { ToolMetadata } from '../core/gateway.js';
+import type { ToolMetadata } from '../core/types.js';
 
 export interface IndexedDocument {
   id: string; // tool name

@@ -1,7 +1,7 @@
 import { AgentStore, AgentRecord } from './agent-store.js';
 import type { AgentType, AgentStatus } from './agent-store.js';
 import { AgentPromptRegistry } from './agent-prompt-registry.js';
-import type { ToolMetadata } from '../../core/gateway.js';
+import type { ToolMetadata } from '../../core/types.js';
 import type { PlanningManager } from '../planning/planning-manager.js';
 import type { MemoryManager } from '../memory/memory-manager.js';
 import type { TDDManager } from '../tdd/tdd-manager.js';

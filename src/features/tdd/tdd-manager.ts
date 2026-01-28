@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import { spawn } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import { TDDStore, TDDTestRun } from './tdd-store.js';
-import type { ToolMetadata } from '../../core/gateway.js';
+import type { ToolMetadata } from '../../core/types.js';
 import {
   TDDRedInputSchema,
   TDDGreenInputSchema,

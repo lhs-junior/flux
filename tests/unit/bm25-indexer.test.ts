@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { BM25Indexer } from '../../src/search/bm25-indexer.js';
-import type { ToolMetadata } from '../../src/core/gateway.js';
+import type { ToolMetadata } from '../../src/core/types.js';
 
 describe('BM25Indexer', () => {
   let indexer: BM25Indexer;

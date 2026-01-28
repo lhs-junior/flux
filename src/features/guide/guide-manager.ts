@@ -1,6 +1,6 @@
 import { GuideStore } from './guide-store.js';
 import { BM25Indexer } from '../../search/bm25-indexer.js';
-import type { ToolMetadata } from '../../core/gateway.js';
+import type { ToolMetadata } from '../../core/types.js';
 import type { MemoryManager } from '../memory/memory-manager.js';
 import type { PlanningManager } from '../planning/planning-manager.js';
 import type {

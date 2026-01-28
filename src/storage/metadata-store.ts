@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import type { ToolMetadata } from '../core/gateway.js';
+import type { ToolMetadata } from '../core/types.js';
 import {
   parsePluginRow,
   parsePluginRows,

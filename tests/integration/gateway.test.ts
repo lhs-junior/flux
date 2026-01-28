@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { AwesomePluginGateway } from '../../src/index.js';
-import type { MCPServerConfig } from '../../src/core/gateway.js';
+import type { MCPServerConfig } from '../../src/core/types.js';
 
 describe('Gateway Integration', () => {
   let gateway: AwesomePluginGateway;

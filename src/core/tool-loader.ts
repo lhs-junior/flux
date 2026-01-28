@@ -1,4 +1,4 @@
-import type { ToolMetadata } from './gateway.js';
+import type { ToolMetadata } from './types.js';
 import { BM25Indexer } from '../search/bm25-indexer.js';
 
 export interface ToolLoadingStrategy {

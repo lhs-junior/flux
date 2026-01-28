@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ToolLoader } from '../../src/core/tool-loader.js';
-import type { ToolMetadata } from '../../src/core/gateway.js';
+import type { ToolMetadata } from '../../src/core/types.js';
 
 describe('ToolLoader', () => {
   let loader: ToolLoader;

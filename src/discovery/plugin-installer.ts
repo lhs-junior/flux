@@ -3,7 +3,7 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import type { GitHubRepoInfo } from './github-explorer.js';
-import type { MCPServerConfig } from '../core/gateway.js';
+import type { MCPServerConfig } from '../core/types.js';
 import logger from '../utils/logger.js';
 
 export interface InstallOptions {
