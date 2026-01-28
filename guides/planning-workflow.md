@@ -5,10 +5,10 @@ category: tutorial
 difficulty: intermediate
 estimatedTime: 20
 tags: [planning, todo, workflow, project-management]
-relatedTools: [planning_create, planning_add_task, planning_list, planning_update, planning_delete]
+relatedTools: [planning_create, planning_update, planning_tree]
 prerequisites: [getting-started]
 version: 1.0.0
-excerpt: Structure your development process with file-based planning and TODO tracking for better project organization.
+excerpt: Structure your development process with planning and TODO tracking for better project organization.
 ---
 
 # Planning and TODO Tracking
@@ -18,27 +18,22 @@ The Planning system provides structured project management with file-based plans
 ## Overview
 
 The planning system offers:
-- **File-based plans**: Plans stored as markdown in `.omc/plans/`
-- **TODO tracking**: Structured tasks with status and priorities
-- **Progress monitoring**: Track completion and time estimates
-- **Version control friendly**: Markdown files work with git
-- **Plan templates**: Pre-defined structures for common workflows
+- **TODO tracking**: Structured tasks with parent-child relationships
+- **Dependency management**: Create task hierarchies with cycle detection
+- **Status tracking**: Monitor task progress (pending, in_progress, completed)
+- **Tree visualization**: Beautiful ASCII tree view with status icons
+- **Semantic search**: BM25-powered TODO discovery
 
-## Step 1: Create Your First Plan
+## Step 1: Create Your First TODO
 
-Let's create a plan for a new feature:
+Let's create a TODO item for a feature:
 
 ```typescript
 // Use the planning_create tool
 {
-  "name": "feature-authentication",
-  "description": "Implement user authentication with JWT",
-  "goals": [
-    "Design auth architecture",
-    "Implement JWT token generation",
-    "Add login/logout endpoints",
-    "Write comprehensive tests"
-  ]
+  "content": "Implement user authentication with JWT",
+  "tags": ["feature", "auth"],
+  "status": "pending"
 }
 ```
 
@@ -46,74 +41,66 @@ Expected output:
 ```json
 {
   "success": true,
-  "plan": {
+  "todo": {
     "id": "uuid-here",
-    "name": "feature-authentication",
-    "description": "Implement user authentication with JWT",
-    "status": "active",
-    "filePath": ".omc/plans/feature-authentication.md",
+    "content": "Implement user authentication with JWT",
+    "status": "pending",
+    "tags": ["feature", "auth"],
     "createdAt": 1234567890
   }
 }
 ```
 
-This creates a markdown file at `.omc/plans/feature-authentication.md`.
-
 Hints:
-- Use kebab-case for plan names
-- Include clear, specific goals
-- Keep descriptions concise
+- Use clear, specific TODO descriptions
+- Add relevant tags for categorization
+- One TODO per actionable item
 
-## Step 2: Add Tasks to Your Plan
+## Step 2: Create Child TODOs
 
-Break down goals into actionable tasks:
+Break down large tasks into subtasks:
 
 ```typescript
-// Use the planning_add_task tool
+// Use the planning_create tool to create child TODOs
 {
-  "planName": "feature-authentication",
-  "task": "Design database schema for user table",
-  "priority": "high",
-  "estimatedTime": 60
+  "content": "Design database schema for user table",
+  "parentId": "uuid-from-step-1",
+  "tags": ["auth", "database"],
+  "status": "pending"
+}
+
+{
+  "content": "Implement JWT token generation utility",
+  "parentId": "uuid-from-step-1",
+  "tags": ["auth", "security"],
+  "status": "pending"
+}
+
+{
+  "content": "Create login endpoint with validation",
+  "parentId": "uuid-from-step-1",
+  "tags": ["auth", "api"],
+  "status": "pending"
+}
+
+{
+  "content": "Write unit tests for auth module",
+  "parentId": "uuid-from-step-1",
+  "tags": ["auth", "testing"],
+  "status": "pending"
 }
 ```
 
-Add more tasks:
+Check: Use planning_tree to visualize the TODO hierarchy
 
-```typescript
-{
-  "planName": "feature-authentication",
-  "task": "Implement JWT token generation utility",
-  "priority": "high",
-  "estimatedTime": 120
-}
+## Step 3: Update TODO Status
 
-{
-  "planName": "feature-authentication",
-  "task": "Create login endpoint with validation",
-  "priority": "high",
-  "estimatedTime": 90
-}
-
-{
-  "planName": "feature-authentication",
-  "task": "Write unit tests for auth module",
-  "priority": "medium",
-  "estimatedTime": 120
-}
-```
-
-Check: Open `.omc/plans/feature-authentication.md` to see the structured plan
-
-## Step 3: Update Task Status
-
-Mark tasks as you work on them:
+Mark TODOs as you work on them:
 
 ```typescript
 // Use the planning_update tool
 {
-  "planName": "feature-authentication",
-  "taskId": "uuid-of-task",
+  "id": "uuid-of-todo",
   "updates": {
     "status": "in-progress"
   }
@@ -122,188 +109,136 @@ Mark tasks as you work on them:
 
 Status options:
 - `pending`: Not started (default)
-- `in-progress`: Currently working on
+- `in_progress`: Currently working on
 - `completed`: Finished
-- `blocked`: Can't proceed due to dependency
 
-## Step 4: Track Progress
+## Step 4: View TODO Tree
 
-View plan progress and statistics:
+Visualize your TODO hierarchy:
 
 ```typescript
-// Use the planning_status tool
+// Use the planning_tree tool
 {
-  "planName": "feature-authentication"
+  "filter": "all"
 }
 ```
 
 Expected output:
-```json
-{
-  "success": true,
-  "plan": {
-    "name": "feature-authentication",
-    "status": "active",
-    "tasks": {
-      "total": 4,
-      "completed": 1,
-      "inProgress": 1,
-      "pending": 2,
-      "blocked": 0
-    },
-    "progress": {
-      "percentage": 25,
-      "estimatedTimeRemaining": 330
-    }
-  }
-}
+```
+📋 TODO Tree (3 root items)
+
+✅ Implement user authentication with JWT
+  ✅ Design database schema for user table
+  🔄 Implement JWT token generation utility
+  ⏳ Create login endpoint with validation
+  ⏳ Write unit tests for auth module
+
+Summary:
+  Total: 5 items
+  Completed: 1
+  In Progress: 1
+  Pending: 3
 ```
 
-Check: Compare actual time spent vs estimates to improve future planning
+Check: Use filter options to focus on specific statuses
 
-## Step 5: List All Plans
+## Step 5: Filter TODOs
 
-See all your active plans:
+See TODOs by status:
 
 ```typescript
-// Use the planning_list tool
+// Use the planning_tree tool with filters
 {
-  "filter": {
-    "status": "active"
-  }
+  "filter": "pending"
 }
 ```
 
 Filter options:
-- `status`: Filter by plan status (active, completed, archived)
-- `tag`: Filter by tags
-- `since`: Show plans created after timestamp
+- `all`: Show all TODOs
+- `pending`: Only pending items
+- `in_progress`: Only in-progress items
+- `completed`: Only completed items
 
 Hints:
-- Use `status: "active"` to focus on current work
-- Use `status: "completed"` to review past projects
+- Use `pending` to focus on what needs to be done
+- Use `in_progress` to see current work
+- Use `completed` to review achievements
 
-## Step 6: Complete and Archive Plans
+## TODO Structure
 
-Mark a plan as complete:
+TODOs are stored in a SQLite database with parent-child relationships:
 
-```typescript
-// Use the planning_update tool
+```json
 {
-  "planName": "feature-authentication",
-  "updates": {
-    "status": "completed"
-  }
+  "id": "uuid-here",
+  "content": "Implement user authentication with JWT",
+  "status": "in_progress",
+  "tags": ["feature", "auth"],
+  "parentId": null,
+  "createdAt": 1704067200000,
+  "completedAt": null,
+  "children": [
+    {
+      "id": "uuid-child-1",
+      "content": "Design database schema for user table",
+      "status": "completed",
+      "tags": ["auth", "database"],
+      "parentId": "uuid-here",
+      "completedAt": 1704070800000
+    },
+    {
+      "id": "uuid-child-2",
+      "content": "Implement JWT token generation utility",
+      "status": "in_progress",
+      "tags": ["auth", "security"],
+      "parentId": "uuid-here"
+    }
+  ]
 }
-```
-
-Archive old plans:
-
-```typescript
-{
-  "planName": "feature-authentication",
-  "updates": {
-    "status": "archived"
-  }
-}
-```
-
-The plan file remains in `.omc/plans/` for reference.
-
-## Plan Structure
-
-Plans are stored as markdown files with frontmatter:
-
-```markdown
----
-id: uuid-here
-name: feature-authentication
-status: active
-created: 2024-01-28T12:00:00Z
-updated: 2024-01-28T14:30:00Z
----
-
-# Feature: Authentication
-
-## Description
-Implement user authentication with JWT
-
-## Goals
-- Design auth architecture
-- Implement JWT token generation
-- Add login/logout endpoints
-- Write comprehensive tests
-
-## Tasks
-
-### Task 1: Design database schema
-- Status: completed
-- Priority: high
-- Estimated: 60 min
-- Completed: 2024-01-28T13:00:00Z
-
-### Task 2: Implement JWT utility
-- Status: in-progress
-- Priority: high
-- Estimated: 120 min
-
-### Task 3: Create login endpoint
-- Status: pending
-- Priority: high
-- Estimated: 90 min
-
-### Task 4: Write unit tests
-- Status: pending
-- Priority: medium
-- Estimated: 120 min
-
-## Progress
-- Total: 4 tasks
-- Completed: 1 (25%)
-- In Progress: 1
-- Remaining time: ~330 minutes
 ```
 
 ## Best Practices
 
-### Creating Effective Plans
+### Writing Effective TODOs
 
-1. **Name clearly**: Use descriptive, kebab-case names
-   - Good: `feature-user-auth`, `bugfix-memory-leak`, `refactor-api-layer`
-   - Bad: `plan1`, `todo`, `stuff`
+1. **Be specific**: Clear, actionable TODO items
+   - Good: `Add JWT token validation to login endpoint`, `Write unit tests for auth middleware`
+   - Bad: `Fix auth`, `improve stuff`
 
-2. **Set realistic goals**: 3-7 high-level goals per plan
-   - Too few: Plan is too narrow
-   - Too many: Plan is unfocused
+2. **Use tags consistently**: Organize TODOs by category
+   - Use lowercase, hyphenated tags
+   - Common tags: `feature`, `bug`, `refactor`, `testing`, `documentation`
+   - Project-specific tags: `auth`, `api`, `database`, `performance`
 
-3. **Break into tasks**: Each goal becomes 2-5 tasks
-   - Tasks should be completable in 1-4 hours
-   - Very large tasks should be broken down further
+3. **Create hierarchies**: Parent-child relationships for organization
+   - Parent TODO: Large feature or epic
+   - Child TODOs: Specific implementation tasks
+   - Prevents circular dependencies automatically
 
-### Task Management
+### Status Management
 
-1. **Prioritize effectively**:
-   - `high`: Critical path, blockers, urgent work
-   - `medium`: Important but not urgent
-   - `low`: Nice to have, future improvements
-
-2. **Estimate time**: Use actual time, not ideal time
-   - Include testing and documentation
-   - Add buffer for unexpected issues
-   - Track actual vs estimated for learning
-
-3. **Update status regularly**: Keep plans current
-   - Update when starting a task
+1. **Update regularly**: Keep statuses current
+   - Update when starting a TODO
    - Mark completed immediately
-   - Note blockers as they occur
+   - Change status as circumstances change
+
+2. **Use status appropriately**:
+   - `pending`: Not started (default)
+   - `in_progress`: Currently working on
+   - `completed`: Finished and verified
+
+3. **Monitor progress**: Use planning_tree to track overall progress
+   - See summary statistics
+   - Identify bottlenecks
+   - Celebrate completions
 
 ### Workflow Integration
 
-1. **Start day with planning**: Review active plans
-2. **Pick task based on priority**: Focus on high-priority items
-3. **Update as you work**: Keep status current
-4. **End day with review**: Update progress and plan next day
-5. **Archive completed plans**: Keep workspace clean
+1. **Start day with tree view**: Review pending and in-progress TODOs
+2. **Focus on root TODOs first**: Complete parent items before children
+3. **Update as you progress**: Mark status changes immediately
+4. **Track completions**: See what's been accomplished
+5. **Plan next items**: Look ahead to pending TODOs
 
 ## Integration with Other Features
 
@@ -324,54 +259,54 @@ memory_save({
 
 ### Planning + Agents
 
-Delegate plan-related tasks:
+Delegate planning-related tasks:
 
 ```typescript
-// Create plan
+// Create a feature TODO
 planning_create({
-  "name": "refactor-api-layer",
-  "goals": ["improve error handling", "add validation", "enhance logging"]
+  "content": "Refactor API layer for better error handling",
+  "tags": ["refactoring", "api"]
 })
 
-// Delegate architecture work
-agent_delegate({
-  "agentType": "architect",
-  "task": "Design improved error handling for refactor-api-layer plan"
+// Delegate strategy work
+agent_spawn({
+  "agentType": "specialist_strategist",
+  "task": "Design improved error handling architecture for API layer"
 })
 
 // Delegate implementation
-agent_delegate({
-  "agentType": "refactorer",
-  "task": "Implement error handling from refactor-api-layer plan"
+agent_spawn({
+  "agentType": "specialist_optimizer",
+  "task": "Implement error handling improvements"
 })
 ```
 
 ### Planning + TDD
 
-Structure TDD workflow with plans:
+Structure TDD workflow with TODOs:
 
 ```typescript
-// Create TDD plan
+// Create TDD TODO
 planning_create({
-  "name": "tdd-user-service",
-  "goals": ["write tests", "implement features", "refactor"]
+  "content": "Implement user service with TDD",
+  "tags": ["tdd", "feature"]
 })
 
-// Add TDD tasks
-planning_add_task({
-  "planName": "tdd-user-service",
-  "task": "Write tests for user creation",
-  "priority": "high"
+// Create child TODOs for TDD cycle
+planning_create({
+  "content": "Write tests for user creation",
+  "parentId": "uuid-from-above",
+  "tags": ["tdd", "testing"]
 })
 
-planning_add_task({
-  "planName": "tdd-user-service",
-  "task": "Implement user creation to pass tests",
-  "priority": "high"
+planning_create({
+  "content": "Implement user creation to pass tests",
+  "parentId": "uuid-from-above",
+  "tags": ["tdd", "implementation"]
 })
 
 // Start TDD workflow
-tdd_start({ "feature": "user service" })
+tdd_red({ "feature": "user service" })
 ```
 
 ## Common Planning Patterns
@@ -380,13 +315,33 @@ tdd_start({ "feature": "user service" })
 
 ```typescript
 planning_create({
-  "name": "feature-notifications",
-  "goals": [
-    "Design notification system",
-    "Implement real-time delivery",
-    "Add email notifications",
-    "Create notification preferences UI"
-  ]
+  "content": "Build real-time notifications feature",
+  "tags": ["feature", "notifications"]
+})
+
+// Child TODOs
+planning_create({
+  "content": "Design notification system architecture",
+  "parentId": "uuid-from-above",
+  "tags": ["design"]
+})
+
+planning_create({
+  "content": "Implement real-time delivery with WebSockets",
+  "parentId": "uuid-from-above",
+  "tags": ["implementation"]
+})
+
+planning_create({
+  "content": "Add email notification support",
+  "parentId": "uuid-from-above",
+  "tags": ["implementation"]
+})
+
+planning_create({
+  "content": "Write comprehensive tests",
+  "parentId": "uuid-from-above",
+  "tags": ["testing"]
 })
 ```
 
@@ -394,13 +349,34 @@ planning_create({
 
 ```typescript
 planning_create({
-  "name": "bugfix-session-timeout",
-  "goals": [
-    "Reproduce and document bug",
-    "Identify root cause",
-    "Implement fix",
-    "Add regression tests"
-  ]
+  "content": "Fix: Sessions timing out too quickly",
+  "tags": ["bug", "urgent"]
+})
+
+// Investigation phase
+planning_create({
+  "content": "Reproduce and document the bug",
+  "parentId": "uuid-from-above",
+  "tags": ["investigation"]
+})
+
+// Fix phase
+planning_create({
+  "content": "Identify root cause in session middleware",
+  "parentId": "uuid-from-above",
+  "tags": ["debugging"]
+})
+
+planning_create({
+  "content": "Implement timeout fix",
+  "parentId": "uuid-from-above",
+  "tags": ["implementation"]
+})
+
+planning_create({
+  "content": "Add regression tests",
+  "parentId": "uuid-from-above",
+  "tags": ["testing"]
 })
 ```
 
@@ -408,76 +384,33 @@ planning_create({
 
 ```typescript
 planning_create({
-  "name": "refactor-database-layer",
-  "goals": [
-    "Audit current implementation",
-    "Design improved architecture",
-    "Implement repository pattern",
-    "Migrate existing code",
-    "Update tests"
-  ]
+  "content": "Refactor database layer for better maintainability",
+  "tags": ["refactoring"]
 })
-```
 
-### Sprint Planning
-
-```typescript
 planning_create({
-  "name": "sprint-2024-w05",
-  "goals": [
-    "Complete authentication feature",
-    "Fix critical bugs",
-    "Update documentation",
-    "Performance improvements"
-  ]
+  "content": "Audit current database implementation",
+  "parentId": "uuid-from-above",
+  "tags": ["audit"]
 })
-```
 
-## Plan Templates
+planning_create({
+  "content": "Design repository pattern architecture",
+  "parentId": "uuid-from-above",
+  "tags": ["design"]
+})
 
-### Standard Feature Plan
+planning_create({
+  "content": "Migrate to repository pattern",
+  "parentId": "uuid-from-above",
+  "tags": ["implementation"]
+})
 
-```
-Goals:
-- Design & architecture
-- Core implementation
-- Error handling & validation
-- Testing (unit + integration)
-- Documentation
-
-Tasks:
-- High priority: Core functionality
-- Medium priority: Edge cases, error handling
-- Low priority: Optimizations, polish
-```
-
-### Bug Fix Plan
-
-```
-Goals:
-- Reproduce bug reliably
-- Identify root cause
-- Implement fix
-- Add regression tests
-
-Tasks:
-- Priority based on bug severity
-- Include verification steps
-```
-
-### Refactoring Plan
-
-```
-Goals:
-- Audit current code
-- Design improvements
-- Implement changes incrementally
-- Maintain test coverage
-- Update documentation
-
-Tasks:
-- Break into small, safe changes
-- Test after each change
+planning_create({
+  "content": "Update and verify all tests pass",
+  "parentId": "uuid-from-above",
+  "tags": ["testing"]
+})
 ```
 
 ## Next Steps

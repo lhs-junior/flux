@@ -31,6 +31,22 @@ export interface ExecutionResult {
   error?: string;
 }
 
+/**
+ * Dangerous patterns that could lead to code injection or unsafe behavior
+ */
+const DANGEROUS_PATTERNS = [
+  /__import__\s*\(/i,
+  /eval\s*\(/i,
+  /exec\s*\(/i,
+  /compile\s*\(/i,
+  /os\.system\s*\(/i,
+  /subprocess\.(run|call|Popen|check_output|check_call)\s*\(/i,
+  /globals\s*\(\s*\)\s*\[/i,
+  /locals\s*\(\s*\)\s*\[/i,
+  /\bexecfile\b/i,
+  /\binput\s*\(/i, // Can be dangerous in automated contexts
+];
+
 export class ScienceExecutor {
   private store: ScienceStore;
   private venvPath: string;
@@ -66,6 +82,20 @@ export class ScienceExecutor {
   }
 
   /**
+   * Validate user code for dangerous patterns
+   */
+  private validateCode(code: string): void {
+    for (const pattern of DANGEROUS_PATTERNS) {
+      if (pattern.test(code)) {
+        throw new ScienceError(
+          `Code contains potentially dangerous pattern: ${pattern.source}`,
+          'VALIDATION_ERROR'
+        );
+      }
+    }
+  }
+
+  /**
    * Execute Python code with optional session persistence
    */
   async executePython(
@@ -81,9 +111,13 @@ export class ScienceExecutor {
     const timeout = options.timeout || this.limits.timeoutMs;
 
     try {
+      // Validate code for dangerous patterns
+      this.validateCode(code);
+
       // Prepare execution environment
       const execId = randomUUID();
       const scriptPath = join(this.sessionDir, `exec_${execId}.py`);
+      const codeFilePath = join(this.sessionDir, `code_${execId}.py`);
       const outputPath = join(this.sessionDir, `output_${execId}.json`);
 
       // Load session if provided
@@ -101,9 +135,12 @@ export class ScienceExecutor {
         pickleFile = join(this.sessionDir, `session_${sessionId}.pkl`);
       }
 
+      // Write user code to separate file (secure approach)
+      writeFileSync(codeFilePath, code, 'utf-8');
+
       // Generate Python script with session restoration and capture logic
       const pythonScript = this.generateExecutionScript(
-        code,
+        codeFilePath,
         pickleFile,
         outputPath,
         options.returnVars || [],
@@ -127,9 +164,12 @@ export class ScienceExecutor {
         }
       }
 
-      // Cleanup script
+      // Cleanup script and code file
       if (existsSync(scriptPath)) {
         unlinkSync(scriptPath);
+      }
+      if (existsSync(codeFilePath)) {
+        unlinkSync(codeFilePath);
       }
 
       // Update session if provided
@@ -179,9 +219,10 @@ export class ScienceExecutor {
 
   /**
    * Generate Python script for execution with session management
+   * Now reads code from file instead of embedding inline
    */
   private generateExecutionScript(
-    code: string,
+    codeFilePath: string,
     pickleFile: string | undefined,
     outputPath: string,
     returnVars: string[],
@@ -217,12 +258,15 @@ stderr_capture = io.StringIO()
 ` : ''}
 
 try:
-    # Execute code
+    # Read and execute code from file (secure approach - no string escaping)
+    with open('${codeFilePath.replace(/\\/g, '\\\\')}', 'r', encoding='utf-8') as code_file:
+        user_code = code_file.read()
+
     ${captureOutput ? `
     with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
-        exec('''${code.replace(/'/g, "\\'")}''', globals_dict)
+        exec(user_code, globals_dict)
     ` : `
-    exec('''${code.replace(/'/g, "\\'")}''', globals_dict)
+    exec(user_code, globals_dict)
     `}
 
     # Capture return values if specified
@@ -403,7 +447,7 @@ if stderr_capture.getvalue():
       const fs = require('fs');
       const files = fs.readdirSync(this.sessionDir);
       for (const file of files) {
-        if (file.startsWith('exec_') || file.startsWith('output_')) {
+        if (file.startsWith('exec_') || file.startsWith('output_') || file.startsWith('code_')) {
           try {
             unlinkSync(join(this.sessionDir, file));
             count++;

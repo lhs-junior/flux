@@ -5,7 +5,7 @@ category: tutorial
 difficulty: intermediate
 estimatedTime: 25
 tags: [agents, orchestration, delegation, specialization]
-relatedTools: [agent_delegate, agent_status, agent_list]
+relatedTools: [agent_spawn, agent_status, agent_result, agent_terminate, agent_list]
 prerequisites: [getting-started, memory-system]
 version: 1.0.0
 excerpt: Master the 10 specialized agents for delegating complex tasks with domain expertise and cross-feature integration.
@@ -17,27 +17,27 @@ The Agent Orchestration System provides 10 specialized agents, each with domain 
 
 ## Overview
 
-Awesome Plugin includes these specialized agents:
+Awesome Plugin includes these 10 specialized agents:
 
-1. **Architect**: System design, architecture, patterns
-2. **Debugger**: Bug analysis, root cause investigation
-3. **Refactorer**: Code cleanup, optimization, structure improvement
-4. **Tester**: Test writing, coverage analysis, QA
-5. **Docs Writer**: Documentation, comments, README files
-6. **Performance**: Optimization, profiling, benchmarking
-7. **Security**: Vulnerability scanning, secure coding practices
-8. **Integration**: API integration, third-party services
-9. **Frontend**: UI/UX, React, Vue, styling
-10. **Backend**: Server logic, databases, APIs
+1. **specialist_researcher**: Deep information research and analysis
+2. **specialist_analyst**: Data analysis and pattern recognition
+3. **specialist_strategist**: Strategic planning and decision support
+4. **specialist_designer**: Design thinking and creative solutions
+5. **specialist_coder**: Code generation and technical implementation
+6. **specialist_teacher**: Educational content and explanations
+7. **specialist_writer**: Content creation and documentation
+8. **specialist_debugger**: Problem diagnosis and troubleshooting
+9. **specialist_reviewer**: Code/content review and feedback
+10. **specialist_optimizer**: Performance and efficiency improvements
 
 ## Step 1: Delegate Your First Task
 
-Let's delegate a task to the Architect agent:
+Let's delegate a task to the Strategist agent:
 
 ```typescript
-// Use the agent_delegate tool
+// Use the agent_spawn tool
 {
-  "agentType": "architect",
+  "agentType": "specialist_strategist",
   "task": "Design a database schema for user authentication with JWT tokens",
   "priority": "high"
 }
@@ -47,8 +47,8 @@ Expected output:
 ```json
 {
   "success": true,
-  "sessionId": "uuid-here",
-  "agent": "architect",
+  "agentId": "uuid-here",
+  "agent": "specialist_strategist",
   "status": "completed",
   "result": {
     "analysis": "...",
@@ -72,7 +72,7 @@ Monitor an agent's progress on a task:
 ```typescript
 // Use the agent_status tool
 {
-  "sessionId": "uuid-from-previous-delegation"
+  "agentId": "uuid-from-previous-delegation"
 }
 ```
 
@@ -80,13 +80,13 @@ This shows the current status, progress, and any intermediate results.
 
 Check: Use this to track long-running tasks
 
-## Step 3: Use the Debugger Agent
+## Step 3: Use the Debugger Specialist
 
-When you encounter a bug, delegate to the Debugger:
+When you encounter a bug, delegate to specialist_debugger:
 
 ```typescript
 {
-  "agentType": "debugger",
+  "agentType": "specialist_debugger",
   "task": "Investigate why authentication tokens expire too quickly",
   "priority": "high",
   "context": {
@@ -96,42 +96,42 @@ When you encounter a bug, delegate to the Debugger:
 }
 ```
 
-The Debugger agent will:
+The Debugger specialist will:
 - Analyze the error
 - Identify root causes
 - Suggest fixes
 - Provide debugging steps
 
-## Step 4: Refactor Code with the Refactorer
+## Step 4: Optimize Code with the Optimizer
 
-Improve code quality and structure:
+Improve code quality and performance:
 
 ```typescript
 {
-  "agentType": "refactorer",
-  "task": "Refactor the user authentication module for better testability",
+  "agentType": "specialist_optimizer",
+  "task": "Optimize the user authentication module for better performance and testability",
   "priority": "medium",
   "context": {
     "files": ["src/auth/"],
-    "goals": ["improve test coverage", "reduce coupling"]
+    "goals": ["improve performance", "reduce complexity"]
   }
 }
 ```
 
-The Refactorer will suggest structural improvements and provide refactored code.
+The Optimizer specialist will suggest improvements and provide optimized code.
 
 Hints:
-- Specify refactoring goals
+- Specify optimization goals
 - Include current pain points
 - Mention constraints (e.g., maintain backward compatibility)
 
-## Step 5: Write Tests with the Tester
+## Step 5: Generate Tests with the Coder
 
 Generate comprehensive tests:
 
 ```typescript
 {
-  "agentType": "tester",
+  "agentType": "specialist_coder",
   "task": "Create unit tests for the authentication middleware",
   "priority": "high",
   "context": {
@@ -141,7 +141,7 @@ Generate comprehensive tests:
 }
 ```
 
-The Tester agent will:
+The Coder specialist will:
 - Design test cases
 - Write test code
 - Suggest edge cases
@@ -149,14 +149,14 @@ The Tester agent will:
 
 Check: Run the generated tests to ensure they pass
 
-## Step 6: Optimize Performance
+## Step 6: Analyze Performance
 
-Use the Performance agent to identify bottlenecks:
+Use the Analyst specialist to identify bottlenecks:
 
 ```typescript
 {
-  "agentType": "performance",
-  "task": "Optimize database query performance in user lookup",
+  "agentType": "specialist_analyst",
+  "task": "Analyze database query performance in user lookup",
   "priority": "medium",
   "context": {
     "currentResponseTime": "500ms",
@@ -173,103 +173,103 @@ Expected analysis:
 
 ## Agent Specializations
 
-### Architect
-**Best for**: System design, patterns, architecture decisions
+### specialist_researcher
+**Best for**: Deep information research, analysis, investigation
 
 ```typescript
 {
-  "agentType": "architect",
-  "task": "Design a microservices architecture for scaling the application"
+  "agentType": "specialist_researcher",
+  "task": "Research current authentication best practices and security standards"
 }
 ```
 
-### Debugger
-**Best for**: Bug investigation, error analysis, root cause finding
+### specialist_analyst
+**Best for**: Data analysis, pattern recognition, performance analysis
 
 ```typescript
 {
-  "agentType": "debugger",
-  "task": "Find why memory usage increases over time"
+  "agentType": "specialist_analyst",
+  "task": "Analyze API performance metrics and identify bottlenecks"
 }
 ```
 
-### Refactorer
-**Best for**: Code cleanup, structural improvements, pattern application
+### specialist_strategist
+**Best for**: Strategic planning, decision support, architecture design
 
 ```typescript
 {
-  "agentType": "refactorer",
-  "task": "Apply dependency injection pattern to improve testability"
+  "agentType": "specialist_strategist",
+  "task": "Design a scalable microservices architecture for the platform"
 }
 ```
 
-### Tester
-**Best for**: Test generation, coverage analysis, QA
+### specialist_designer
+**Best for**: Design thinking, creative solutions, UX/UI design
 
 ```typescript
 {
-  "agentType": "tester",
-  "task": "Design integration tests for the API endpoints"
+  "agentType": "specialist_designer",
+  "task": "Create a modern, accessible dashboard design for user management"
 }
 ```
 
-### Docs Writer
-**Best for**: Documentation, API docs, README files
+### specialist_coder
+**Best for**: Code generation, implementation, technical solutions
 
 ```typescript
 {
-  "agentType": "docs-writer",
+  "agentType": "specialist_coder",
+  "task": "Implement WebSocket support for real-time notifications"
+}
+```
+
+### specialist_teacher
+**Best for**: Educational content, explanations, documentation
+
+```typescript
+{
+  "agentType": "specialist_teacher",
+  "task": "Create a tutorial on implementing OAuth2 authentication"
+}
+```
+
+### specialist_writer
+**Best for**: Content creation, documentation, technical writing
+
+```typescript
+{
+  "agentType": "specialist_writer",
   "task": "Write comprehensive API documentation for the auth module"
 }
 ```
 
-### Performance
-**Best for**: Optimization, profiling, benchmarking
+### specialist_debugger
+**Best for**: Problem diagnosis, troubleshooting, root cause analysis
 
 ```typescript
 {
-  "agentType": "performance",
-  "task": "Profile and optimize the data processing pipeline"
+  "agentType": "specialist_debugger",
+  "task": "Debug why memory usage increases over time in production"
 }
 ```
 
-### Security
-**Best for**: Vulnerability scanning, secure coding, threat analysis
+### specialist_reviewer
+**Best for**: Code review, feedback, quality assurance
 
 ```typescript
 {
-  "agentType": "security",
-  "task": "Audit the authentication system for security vulnerabilities"
+  "agentType": "specialist_reviewer",
+  "task": "Review the authentication implementation for security issues"
 }
 ```
 
-### Integration
-**Best for**: API integration, third-party services, webhooks
+### specialist_optimizer
+**Best for**: Performance optimization, efficiency improvements, profiling
 
 ```typescript
 {
-  "agentType": "integration",
-  "task": "Integrate with Stripe payment API for subscriptions"
-}
-```
-
-### Frontend
-**Best for**: UI/UX, React/Vue components, styling
-
-```typescript
-{
-  "agentType": "frontend",
-  "task": "Create a responsive dashboard component with dark mode"
-}
-```
-
-### Backend
-**Best for**: Server logic, databases, API design
-
-```typescript
-{
-  "agentType": "backend",
-  "task": "Design RESTful API endpoints for user management"
+  "agentType": "specialist_optimizer",
+  "task": "Optimize the data processing pipeline for faster execution"
 }
 ```
 
@@ -288,9 +288,9 @@ memory_save({
 })
 
 // Agent will recall this when delegated
-agent_delegate({
-  "agentType": "refactorer",
-  "task": "Refactor user service to follow coding standards"
+agent_spawn({
+  "agentType": "specialist_optimizer",
+  "task": "Optimize user service to follow coding standards"
 })
 ```
 
@@ -306,8 +306,8 @@ planning_create({
 })
 
 // Delegate tasks related to the plan
-agent_delegate({
-  "agentType": "architect",
+agent_spawn({
+  "agentType": "specialist_strategist",
   "task": "Design auth architecture for plan: feature-auth"
 })
 ```
@@ -318,17 +318,17 @@ Combine agents with TDD workflow:
 
 ```typescript
 // Start TDD for a feature
-tdd_start({ "feature": "user registration" })
+tdd_red({ "feature": "user registration" })
 
-// Delegate test writing to Tester
-agent_delegate({
-  "agentType": "tester",
+// Delegate test writing to Coder
+agent_spawn({
+  "agentType": "specialist_coder",
   "task": "Write tests for user registration validation"
 })
 
-// Delegate implementation to Backend
-agent_delegate({
-  "agentType": "backend",
+// Delegate implementation to Coder
+agent_spawn({
+  "agentType": "specialist_coder",
   "task": "Implement user registration endpoint"
 })
 ```
@@ -351,18 +351,17 @@ agent_delegate({
    - `medium`: Important but not urgent
    - `low`: Nice to have, future work
 
-### Choosing the Right Agent
+### Choosing the Right Specialist
 
-- **Design questions** → Architect
-- **Bugs and errors** → Debugger
-- **Code quality** → Refactorer
-- **Testing needs** → Tester
-- **Documentation gaps** → Docs Writer
-- **Slow performance** → Performance
-- **Security concerns** → Security
-- **External APIs** → Integration
-- **UI/UX work** → Frontend
-- **Server logic** → Backend
+- **Strategic planning** → specialist_strategist
+- **Bug investigation** → specialist_debugger
+- **Performance tuning** → specialist_optimizer
+- **Code generation** → specialist_coder
+- **Documentation** → specialist_writer or specialist_teacher
+- **Code review** → specialist_reviewer
+- **Data analysis** → specialist_analyst
+- **Research needs** → specialist_researcher
+- **Design work** → specialist_designer
 
 ### Agent Workflow
 
@@ -378,48 +377,48 @@ agent_delegate({
 
 ```typescript
 // 1. Security review
-agent_delegate({
-  "agentType": "security",
-  "task": "Review authentication code for vulnerabilities"
+agent_spawn({
+  "agentType": "specialist_reviewer",
+  "task": "Review authentication code for vulnerabilities and best practices"
 })
 
 // 2. Performance check
-agent_delegate({
-  "agentType": "performance",
-  "task": "Analyze authentication performance"
+agent_spawn({
+  "agentType": "specialist_analyst",
+  "task": "Analyze authentication performance metrics"
 })
 
-// 3. Test coverage
-agent_delegate({
-  "agentType": "tester",
-  "task": "Check test coverage for auth module"
+// 3. Quality assessment
+agent_spawn({
+  "agentType": "specialist_reviewer",
+  "task": "Check code quality and test coverage for auth module"
 })
 ```
 
 ### Feature Development
 
 ```typescript
-// 1. Architecture
-agent_delegate({
-  "agentType": "architect",
+// 1. Architecture & Strategy
+agent_spawn({
+  "agentType": "specialist_strategist",
   "task": "Design feature: real-time notifications"
 })
 
 // 2. Implementation
-agent_delegate({
-  "agentType": "backend",
+agent_spawn({
+  "agentType": "specialist_coder",
   "task": "Implement WebSocket notification system"
 })
 
 // 3. Testing
-agent_delegate({
-  "agentType": "tester",
+agent_spawn({
+  "agentType": "specialist_coder",
   "task": "Write tests for notification system"
 })
 
 // 4. Documentation
-agent_delegate({
-  "agentType": "docs-writer",
+agent_spawn({
+  "agentType": "specialist_writer",
   "task": "Document notification API"
 })
 ```
@@ -428,21 +427,21 @@ agent_delegate({
 
 ```typescript
 // 1. Investigation
-agent_delegate({
-  "agentType": "debugger",
+agent_spawn({
+  "agentType": "specialist_debugger",
   "task": "Find root cause of memory leak"
 })
 
 // 2. Fix
-agent_delegate({
-  "agentType": "refactorer",
-  "task": "Refactor code to fix memory leak"
+agent_spawn({
+  "agentType": "specialist_optimizer",
+  "task": "Optimize code to fix memory leak"
 })
 
 // 3. Verification
-agent_delegate({
-  "agentType": "performance",
-  "task": "Verify memory leak is fixed through profiling"
+agent_spawn({
+  "agentType": "specialist_analyst",
+  "task": "Verify memory leak is fixed through analysis"
 })
 ```
 

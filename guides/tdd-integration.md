@@ -5,10 +5,10 @@ category: tutorial
 difficulty: intermediate
 estimatedTime: 30
 tags: [tdd, testing, workflow, red-green-refactor]
-relatedTools: [tdd_start, tdd_write_test, tdd_run_tests, tdd_implement, tdd_refactor, tdd_status, tdd_complete]
+relatedTools: [tdd_red, tdd_green, tdd_refactor, tdd_verify]
 prerequisites: [getting-started]
 version: 1.0.0
-excerpt: Follow test-driven development with structured Red-Green-Refactor cycles, test tracking, and implementation guidance.
+excerpt: Follow test-driven development with structured Red-Green-Refactor cycles and test verification.
 ---
 
 # Test-Driven Development Workflow
@@ -24,12 +24,12 @@ The TDD workflow supports:
 - **Refactoring support**: Safe code improvements with test coverage
 - **Progress monitoring**: Track TDD sessions and outcomes
 
-## Step 1: Start a TDD Session
+## Step 1: Start the RED Phase
 
-Begin a new TDD session for a feature:
+Begin TDD by entering the RED phase - write a failing test:
 
 ```typescript
-// Use the tdd_start tool
+// Use the tdd_red tool
 {
   "feature": "user-registration",
   "description": "Implement user registration with email validation"
@@ -40,30 +40,26 @@ Expected output:
 ```json
 {
   "success": true,
-  "sessionId": "uuid-here",
+  "testRun": "uuid-here",
   "phase": "red",
   "feature": "user-registration",
-  "message": "TDD session started. Write your first failing test."
+  "message": "RED phase: Write a failing test."
 }
 ```
 
-The session starts in the RED phase: write a failing test.
+The RED phase requires a failing test before implementation.
 
 Hints:
 - Use descriptive feature names
 - Include clear descriptions
-- One feature per session
+- Focus on one behavior per test
 
-## Step 2: Write a Failing Test (RED Phase)
+## Step 2: Write a Failing Test
 
-Write a test that fails because the feature isn't implemented yet:
+Write a test that documents the desired behavior:
 
 ```typescript
-// Use the tdd_write_test tool
-{
-  "sessionId": "uuid-from-start",
-  "testPath": "tests/user-registration.test.ts",
-  "testContent": `
+// Create tests/user-registration.test.ts
 import { describe, it, expect } from 'vitest';
 import { registerUser } from '../src/auth/register';
 
@@ -79,22 +75,20 @@ describe('User Registration', () => {
     expect(result.user.email).toBe('user@example.com');
   });
 });
-  `
-}
 ```
 
-This writes the test file and records it in the TDD session.
+This test describes what the code should do, even though it doesn't exist yet.
 
 Check: Run tests to verify they fail (expected in RED phase)
 
-## Step 3: Run Tests (Stay RED)
+## Step 3: Verify Tests Fail (Confirm RED)
 
-Run tests to confirm they fail:
+Verify your test fails for the right reason:
 
 ```typescript
-// Use the tdd_run_tests tool
+// Use the tdd_verify tool
 {
-  "sessionId": "uuid-here"
+  "testPath": "tests/user-registration.test.ts"
 }
 ```
 
@@ -109,7 +103,7 @@ Expected output:
     "failed": 1,
     "status": "failing"
   },
-  "message": "Tests failing as expected. Proceed to implement the feature."
+  "message": "RED phase confirmed: Test fails as expected."
 }
 ```
 
@@ -125,11 +119,7 @@ Hints:
 Write minimal code to make the test pass:
 
 ```typescript
-// Use the tdd_implement tool
-{
-  "sessionId": "uuid-here",
-  "implementationPath": "src/auth/register.ts",
-  "implementationContent": `
+// Create src/auth/register.ts
 export interface RegisterInput {
   email: string;
   password: string;
@@ -153,21 +143,28 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
     }
   };
 }
-  `
+```
+
+Now use tdd_green to move to the GREEN phase:
+
+```typescript
+// Use the tdd_green tool
+{
+  "testPath": "tests/user-registration.test.ts",
+  "implementationPath": "src/auth/register.ts"
 }
 ```
 
-This transitions the session to GREEN phase.
-
 Check: Run tests again to verify they pass
 
-## Step 5: Verify Tests Pass (GREEN Phase)
+## Step 5: Verify Tests Pass (Confirm GREEN)
 
-Run tests to confirm they pass:
+Run the test suite to confirm all tests pass:
 
 ```typescript
+// Use the tdd_verify tool
 {
-  "sessionId": "uuid-here"
+  "testPath": "tests/user-registration.test.ts"
 }
 ```
 
@@ -180,9 +177,10 @@ Expected output:
     "total": 1,
     "passed": 1,
     "failed": 0,
+    "coverage": "78%",
     "status": "passing"
   },
-  "message": "All tests passing! Consider refactoring if needed."
+  "message": "GREEN phase: All tests passing!"
 }
 ```
 
@@ -193,11 +191,7 @@ Now you can refactor with confidence.
 Improve the code while keeping tests green:
 
 ```typescript
-// Use the tdd_refactor tool
-{
-  "sessionId": "uuid-here",
-  "refactoringDescription": "Add email validation and proper ID generation",
-  "refactoredCode": `
+// Improved implementation with validation and proper ID generation
 import { randomUUID } from 'crypto';
 
 export interface RegisterInput {
@@ -215,7 +209,7 @@ export interface RegisterResult {
 }
 
 function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 }
 
@@ -239,74 +233,63 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
     }
   };
 }
-  `
+```
+
+Use tdd_refactor to verify refactoring keeps tests green:
+
+```typescript
+// Use the tdd_refactor tool
+{
+  "testPath": "tests/user-registration.test.ts",
+  "description": "Add email validation and proper ID generation"
 }
 ```
 
-Check: Run tests after refactoring to ensure they still pass
+Check: Verify tests still pass after refactoring
 
-## Step 7: Add More Tests (Back to RED)
+## Step 7: Add More Tests (Cycle Back to RED)
 
 Add tests for edge cases:
 
 ```typescript
-{
-  "sessionId": "uuid-here",
-  "testPath": "tests/user-registration.test.ts",
-  "testContent": `
-import { describe, it, expect } from 'vitest';
-import { registerUser } from '../src/auth/register';
-
-describe('User Registration', () => {
-  it('should register user with valid email', async () => {
-    const result = await registerUser({
-      email: 'user@example.com',
-      password: 'SecurePass123!'
-    });
-
-    expect(result.success).toBe(true);
-    expect(result.user).toBeDefined();
-    expect(result.user.email).toBe('user@example.com');
+// Add to tests/user-registration.test.ts
+it('should reject invalid email format', async () => {
+  const result = await registerUser({
+    email: 'invalid-email',
+    password: 'SecurePass123!'
   });
 
-  it('should reject invalid email format', async () => {
-    const result = await registerUser({
-      email: 'invalid-email',
-      password: 'SecurePass123!'
-    });
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBe('Invalid email format');
-  });
-
-  it('should generate unique user IDs', async () => {
-    const result1 = await registerUser({
-      email: 'user1@example.com',
-      password: 'Pass123!'
-    });
-
-    const result2 = await registerUser({
-      email: 'user2@example.com',
-      password: 'Pass123!'
-    });
-
-    expect(result1.user.id).not.toBe(result2.user.id);
-  });
+  expect(result.success).toBe(false);
+  expect(result.error).toBe('Invalid email format');
 });
-  `
-}
+
+it('should generate unique user IDs', async () => {
+  const result1 = await registerUser({
+    email: 'user1@example.com',
+    password: 'Pass123!'
+  });
+
+  const result2 = await registerUser({
+    email: 'user2@example.com',
+    password: 'Pass123!'
+  });
+
+  expect(result1.user.id).not.toBe(result2.user.id);
+});
 ```
 
 Cycle back to RED → GREEN → REFACTOR for each new test.
 
-## Step 8: Monitor Progress
+## Step 8: Final Verification
 
-Check TDD session status:
+Run full test suite with coverage verification:
 
 ```typescript
-// Use the tdd_status tool
+// Use the tdd_verify tool with coverage check
 {
-  "sessionId": "uuid-here"
+  "testPath": "tests/user-registration.test.ts",
+  "coverage": true,
+  "threshold": 80
 }
 ```
 
@@ -314,36 +297,18 @@ Expected output:
 ```json
 {
   "success": true,
-  "session": {
-    "sessionId": "uuid-here",
-    "feature": "user-registration",
-    "phase": "green",
-    "cycles": 3,
-    "tests": {
-      "total": 3,
-      "passing": 3,
-      "failing": 0
-    },
-    "duration": "25 minutes"
-  }
+  "phase": "green",
+  "testResults": {
+    "total": 3,
+    "passed": 3,
+    "failing": 0,
+    "coverage": "95%"
+  },
+  "message": "All tests passing with excellent coverage!"
 }
 ```
 
-Track cycles completed and test coverage.
-
-## Step 9: Complete the Session
-
-Mark the TDD session as complete:
-
-```typescript
-// Use the tdd_complete tool
-{
-  "sessionId": "uuid-here",
-  "notes": "Implemented user registration with email validation and UUID generation"
-}
-```
-
-This archives the session and records statistics for learning.
+Track cycles completed and coverage metrics.
 
 ## The Red-Green-Refactor Cycle
 
@@ -476,36 +441,65 @@ function isValidEmail(email: string): boolean {
 
 ### TDD + Planning
 
-Structure TDD with plans:
+Structure TDD with planning:
 
 ```typescript
-// Create plan for TDD feature
+// Create TODO for TDD feature
 planning_create({
-  "name": "tdd-auth-system",
-  "goals": ["write tests", "implement", "refactor"]
+  "content": "Implement authentication system with TDD",
+  "tags": ["tdd", "auth"]
 })
 
-// Start TDD session
-tdd_start({
-  "feature": "authentication",
-  "planName": "tdd-auth-system"
+// Create child TODOs for phases
+planning_create({
+  "content": "Write authentication tests (RED phase)",
+  "parentId": "uuid-from-above",
+  "tags": ["tdd", "testing"]
+})
+
+planning_create({
+  "content": "Implement authentication (GREEN phase)",
+  "parentId": "uuid-from-above",
+  "tags": ["tdd", "implementation"]
+})
+
+planning_create({
+  "content": "Refactor authentication code",
+  "parentId": "uuid-from-above",
+  "tags": ["tdd", "refactoring"]
+})
+
+// Start TDD RED phase
+tdd_red({
+  "feature": "authentication"
 })
 ```
 
 ### TDD + Agents
 
-Use agents for test generation:
+Use agents for test and code generation:
 
 ```typescript
 // Delegate test writing
-agent_delegate({
-  "agentType": "tester",
+agent_spawn({
+  "agentType": "specialist_coder",
   "task": "Generate comprehensive tests for user authentication"
 })
 
-// Use generated tests in TDD
-tdd_write_test({
-  "testContent": "... agent-generated tests ..."
+// Use generated tests in TDD RED phase
+tdd_red({
+  "feature": "authentication"
+})
+
+// Delegate implementation
+agent_spawn({
+  "agentType": "specialist_coder",
+  "task": "Implement authentication to pass generated tests"
+})
+
+// Move to GREEN phase after implementation
+tdd_green({
+  "testPath": "tests/auth.test.ts"
 })
 ```
 
@@ -529,57 +523,73 @@ memory_save({
 ### Feature Development
 
 ```typescript
-// 1. Start session
-tdd_start({ "feature": "user-profile-update" })
+// 1. Start RED phase
+tdd_red({ "feature": "user-profile-update" })
 
 // 2. Write tests for main path
-tdd_write_test({ "testContent": "... happy path test ..." })
+// Create tests/user-profile.test.ts with happy path tests
 
-// 3. Implement feature
-tdd_implement({ "implementationContent": "..." })
+// 3. Confirm RED phase (tests fail)
+tdd_verify({ "testPath": "tests/user-profile.test.ts" })
 
-// 4. Add edge case tests
-tdd_write_test({ "testContent": "... edge case tests ..." })
+// 4. Implement feature
+// Create src/user-profile.ts with implementation
 
-// 5. Handle edge cases
-tdd_implement({ "implementationContent": "... updated code ..." })
+// 5. Move to GREEN phase
+tdd_green({ "testPath": "tests/user-profile.test.ts" })
 
-// 6. Refactor
-tdd_refactor({ "refactoredCode": "... cleaner code ..." })
+// 6. Add edge case tests
+// Add more tests to tests/user-profile.test.ts
+
+// 7. Back to RED, then GREEN for edge cases
+tdd_red({ "feature": "user-profile-update-edge-cases" })
+
+// 8. Implement edge case handling
+tdd_green({ "testPath": "tests/user-profile.test.ts" })
+
+// 9. Refactor
+tdd_refactor({ "testPath": "tests/user-profile.test.ts", "description": "Clean up code" })
 ```
 
 ### Bug Fixing with TDD
 
 ```typescript
 // 1. Write test that reproduces bug
-tdd_write_test({
-  "testContent": "it('should not crash on null input', () => { ... })"
-})
+// Create tests/bug-fix.test.ts with failing test case
 
-// 2. Verify test fails (reproduces bug)
-tdd_run_tests()
+// 2. Start RED phase - test should fail
+tdd_red({ "feature": "null-input-handling" })
 
-// 3. Fix the bug
-tdd_implement({ "implementationContent": "... bug fix ..." })
+// 3. Verify test reproduces bug
+tdd_verify({ "testPath": "tests/bug-fix.test.ts" })
 
-// 4. Verify test passes
-tdd_run_tests()
+// 4. Fix the bug in implementation
+// Update src/handler.ts
+
+// 5. Move to GREEN phase
+tdd_green({ "testPath": "tests/bug-fix.test.ts" })
+
+// 6. Verify test passes
+tdd_verify({ "testPath": "tests/bug-fix.test.ts" })
 ```
 
 ### Refactoring with Test Coverage
 
 ```typescript
-// 1. Write tests for current behavior
-tdd_write_test({ "testContent": "... tests for existing code ..." })
+// 1. Write tests for current behavior first
+// Create tests/existing-feature.test.ts covering current code
 
-// 2. Verify tests pass
-tdd_run_tests()
+// 2. Confirm tests pass
+tdd_verify({ "testPath": "tests/existing-feature.test.ts" })
 
 // 3. Refactor code
-tdd_refactor({ "refactoredCode": "... improved code ..." })
+// Update implementation while keeping tests as safety net
 
-// 4. Verify tests still pass
-tdd_run_tests()
+// 4. Refactor phase - ensure tests still pass
+tdd_refactor({ "testPath": "tests/existing-feature.test.ts", "description": "Improve code structure" })
+
+// 5. Final verification
+tdd_verify({ "testPath": "tests/existing-feature.test.ts", "coverage": true })
 ```
 
 ## Measuring Success

@@ -202,8 +202,8 @@ Agents can access memories for context:
 
 ```typescript
 // Agent can recall relevant project information
-agent_delegate({
-  "agentType": "architect",
+agent_spawn({
+  "agentType": "specialist_strategist",
   "task": "suggest database schema improvements",
   "context": "Check memories for current tech stack"
 })

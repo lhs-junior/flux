@@ -19,6 +19,10 @@ export interface InstallResult {
   installedPackage?: string;
 }
 
+// Regex to validate npm package names (including scoped packages)
+// Matches: package-name, @scope/package-name, package_name.with-chars~123
+const PACKAGE_NAME_REGEX = /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
+
 export class PluginInstaller {
   private configDir: string;
   private installGlobally: boolean;
@@ -167,17 +171,37 @@ export class PluginInstaller {
   }
 
   /**
+   * Validate package name to prevent command injection
+   */
+  private validatePackageName(packageName: string): void {
+    // Allow GitHub URLs (github:user/repo format)
+    if (packageName.startsWith('github:')) {
+      return;
+    }
+
+    // Validate npm package name format
+    if (!PACKAGE_NAME_REGEX.test(packageName)) {
+      throw new Error(
+        `Invalid package name: "${packageName}". Package names must only contain lowercase letters, numbers, hyphens, underscores, dots, and tildes. Scoped packages must follow @scope/name format.`
+      );
+    }
+  }
+
+  /**
    * Run npm install command
    */
   private runNpmInstall(packageName: string): Promise<void> {
     return new Promise((resolve, reject) => {
+      // Validate package name to prevent command injection
+      this.validatePackageName(packageName);
+
       const args = this.installGlobally
         ? ['install', '-g', packageName]
         : ['install', packageName, '--save'];
 
       const npm = spawn('npm', args, {
         stdio: 'pipe',
-        shell: true,
+        shell: false,
       });
 
       let output = '';

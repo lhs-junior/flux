@@ -109,10 +109,10 @@ Recall: memory_recall with query "programming language preference"
 Delegate complex tasks to specialized agents:
 
 ```
-agent_delegate with task "analyze codebase performance" and agentType "architect"
+agent_spawn with task "analyze codebase performance" and agentType "specialist_analyst"
 ```
 
-Available agents: architect, debugger, refactorer, tester, docs-writer, performance, security, integration, frontend, backend
+Available agents: specialist_researcher, specialist_analyst, specialist_designer, specialist_coder, specialist_teacher, specialist_writer, specialist_debugger, specialist_reviewer, specialist_optimizer, specialist_strategist
 
 ### Planning Workflows
 
@@ -120,7 +120,7 @@ Create structured plans with TODO tracking:
 
 ```
 planning_create with name "feature-auth" and goals ["implement JWT", "add tests"]
-planning_add_task with planName "feature-auth" and task "create auth middleware"
+planning_update with planName "feature-auth" and task "create auth middleware"
 ```
 
 ### TDD Workflow
@@ -128,9 +128,9 @@ planning_add_task with planName "feature-auth" and task "create auth middleware"
 Follow test-driven development:
 
 ```
-tdd_start with feature "user authentication"
-tdd_write_test with testPath "tests/auth.test.ts" and content "..."
-tdd_run_tests
+tdd_red with feature "user authentication"
+tdd_green with testPath "tests/auth.test.ts" and implementation "..."
+tdd_verify
 ```
 
 ### Guide Search

@@ -1,11 +1,8 @@
 import { randomUUID } from 'crypto';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { spawn } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import { TDDStore, TDDTestRun } from './tdd-store.js';
 import type { ToolDefinition } from '../../types.js';
-
-const execAsync = promisify(exec);
 
 /**
  * Test runner type
@@ -365,6 +362,56 @@ export class TDDManager {
   }
 
   /**
+   * Validate path to prevent command injection
+   */
+  private validatePath(path: string): boolean {
+    // Only allow alphanumeric characters, /, _, -, .
+    const validPathPattern = /^[a-zA-Z0-9/_.-]+$/;
+    return validPathPattern.test(path);
+  }
+
+  /**
+   * Execute command with spawn (safe from command injection)
+   */
+  private executeCommand(
+    command: string,
+    args: string[]
+  ): Promise<{ success: boolean; output: string }> {
+    return new Promise((resolve) => {
+      const child = spawn(command, args, {
+        shell: false,
+        cwd: process.cwd(),
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      child.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      child.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      child.on('close', (code) => {
+        const output = stdout + (stderr ? `\n${stderr}` : '');
+        resolve({
+          success: code === 0,
+          output,
+        });
+      });
+
+      child.on('error', (error) => {
+        resolve({
+          success: false,
+          output: `Error executing command: ${error.message}`,
+        });
+      });
+    });
+  }
+
+  /**
    * Detect which test runner is being used
    */
   private async detectTestRunner(): Promise<TestRunner> {
@@ -402,34 +449,36 @@ export class TDDManager {
     testPath: string,
     runner: TestRunner
   ): Promise<{ success: boolean; output: string }> {
-    try {
-      let command: string;
-
-      switch (runner) {
-        case 'vitest':
-          command = `npx vitest run ${testPath} --no-coverage`;
-          break;
-        case 'jest':
-          command = `npx jest ${testPath} --no-coverage`;
-          break;
-        case 'mocha':
-          command = `npx mocha ${testPath}`;
-          break;
-        default:
-          command = `npm test -- ${testPath}`;
-      }
-
-      const { stdout, stderr } = await execAsync(command);
-      return {
-        success: true,
-        output: stdout + (stderr ? `\n${stderr}` : ''),
-      };
-    } catch (error: any) {
+    // Validate testPath to prevent command injection
+    if (!this.validatePath(testPath)) {
       return {
         success: false,
-        output: error.stdout + (error.stderr ? `\n${error.stderr}` : ''),
+        output: `Invalid test path: ${testPath}. Path must contain only alphanumeric characters, /, _, -, .`,
       };
     }
+
+    let command: string;
+    let args: string[];
+
+    switch (runner) {
+      case 'vitest':
+        command = 'npx';
+        args = ['vitest', 'run', testPath, '--no-coverage'];
+        break;
+      case 'jest':
+        command = 'npx';
+        args = ['jest', testPath, '--no-coverage'];
+        break;
+      case 'mocha':
+        command = 'npx';
+        args = ['mocha', testPath];
+        break;
+      default:
+        command = 'npm';
+        args = ['test', '--', testPath];
+    }
+
+    return this.executeCommand(command, args);
   }
 
   /**
@@ -438,36 +487,35 @@ export class TDDManager {
   private async runAllTests(
     runner: TestRunner
   ): Promise<{ success: boolean; output: string; testsRun: number }> {
-    try {
-      let command: string;
+    let command: string;
+    let args: string[];
 
-      switch (runner) {
-        case 'vitest':
-          command = 'npx vitest run --no-coverage';
-          break;
-        case 'jest':
-          command = 'npx jest --no-coverage';
-          break;
-        case 'mocha':
-          command = 'npx mocha';
-          break;
-        default:
-          command = 'npm test';
-      }
-
-      const { stdout, stderr } = await execAsync(command);
-      const output = stdout + (stderr ? `\n${stderr}` : '');
-
-      // Parse test count (simplified)
-      const testsRun = this.parseTestCount(output);
-
-      return { success: true, output, testsRun };
-    } catch (error: any) {
-      const output = error.stdout + (error.stderr ? `\n${error.stderr}` : '');
-      const testsRun = this.parseTestCount(output);
-
-      return { success: false, output, testsRun };
+    switch (runner) {
+      case 'vitest':
+        command = 'npx';
+        args = ['vitest', 'run', '--no-coverage'];
+        break;
+      case 'jest':
+        command = 'npx';
+        args = ['jest', '--no-coverage'];
+        break;
+      case 'mocha':
+        command = 'npx';
+        args = ['mocha'];
+        break;
+      default:
+        command = 'npm';
+        args = ['test'];
     }
+
+    const result = await this.executeCommand(command, args);
+    const testsRun = this.parseTestCount(result.output);
+
+    return {
+      success: result.success,
+      output: result.output,
+      testsRun,
+    };
   }
 
   /**
@@ -483,49 +531,48 @@ export class TDDManager {
     testsFailed: number;
     coverage: number | null;
   }> {
-    try {
-      let command: string;
+    let command: string;
+    let args: string[];
 
-      switch (runner) {
-        case 'vitest':
-          command = 'npx vitest run --coverage';
-          break;
-        case 'jest':
-          command = 'npx jest --coverage';
-          break;
-        case 'mocha':
-          command = 'npx nyc mocha';
-          break;
-        default:
-          command = 'npm test -- --coverage';
-      }
+    switch (runner) {
+      case 'vitest':
+        command = 'npx';
+        args = ['vitest', 'run', '--coverage'];
+        break;
+      case 'jest':
+        command = 'npx';
+        args = ['jest', '--coverage'];
+        break;
+      case 'mocha':
+        command = 'npx';
+        args = ['nyc', 'mocha'];
+        break;
+      default:
+        command = 'npm';
+        args = ['test', '--', '--coverage'];
+    }
 
-      const { stdout, stderr } = await execAsync(command);
-      const output = stdout + (stderr ? `\n${stderr}` : '');
+    const result = await this.executeCommand(command, args);
+    const testsRun = this.parseTestCount(result.output);
+    const coverage = this.parseCoverage(result.output);
 
-      const testsRun = this.parseTestCount(output);
-      const coverage = this.parseCoverage(output);
-
+    if (result.success) {
       return {
         success: true,
-        output,
+        output: result.output,
         testsRun,
         testsPassed: testsRun,
         testsFailed: 0,
         coverage,
       };
-    } catch (error: any) {
-      const output = error.stdout + (error.stderr ? `\n${error.stderr}` : '');
-      const testsRun = this.parseTestCount(output);
-      const coverage = this.parseCoverage(output);
-
+    } else {
       // Try to parse failed count
-      const failedMatch = output.match(/(\d+) failed/i);
+      const failedMatch = result.output.match(/(\d+) failed/i);
       const testsFailed = failedMatch ? parseInt(failedMatch[1]) : testsRun;
 
       return {
         success: false,
-        output,
+        output: result.output,
         testsRun,
         testsPassed: testsRun - testsFailed,
         testsFailed,

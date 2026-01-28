@@ -8,8 +8,8 @@
 [![Absorbed](https://img.shields.io/badge/absorbed-7%2F8-brightgreen)](README.md#-absorption-history)
 [![Tools](https://img.shields.io/badge/tools-34-blue)](README.md#-absorption-history)
 
-**Status**: ✅ **v0.6.0 - 87.5% Milestone!**
-**Latest**: science-tools 흡수 (6 Science Tools + Python Integration + Statistical/ML Analysis)
+**Status**: ✅ **v1.0.0 - Release Ready!**
+**Latest**: 7 major feature systems fully absorbed and integrated
 
 ## 🎯 The Absorption Philosophy
 
@@ -93,8 +93,8 @@ Automatically find and evaluate MCP plugins from GitHub before installing.
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/awesome-pulgin.git
-cd awesome-pulgin
+git clone https://github.com/anthropics/awesome-plugin.git
+cd awesome-plugin
 
 # Install dependencies
 npm install
@@ -235,17 +235,15 @@ The awesome-plugin combines **7 major feature systems** providing a comprehensiv
 - [Examples](docs/examples/) - Usage examples and tutorials
 - [Troubleshooting](docs/troubleshooting.md) - Common issues and solutions
 - [FAQ](docs/faq.md) - Frequently asked questions
-- [Architecture](docs/architecture.md) - Deep dive into architecture *(coming soon)*
-- [Configuration](docs/configuration.md) - Configuration options *(coming soon)*
-- [Performance Tuning](docs/performance-tuning.md) - Optimization guide *(coming soon)*
+- [Architecture](docs/architecture.md) - Deep dive into architecture
+- [Configuration](docs/configuration.md) - Configuration options
+- [Performance Tuning](docs/performance-tuning.md) - Optimization guide
 - [Contributing](CONTRIBUTING.md) - How to contribute
 - [Changelog](CHANGELOG.md) - Version history
 
 ### 한국어 문서 (Korean Documentation)
 - [변경 로그](CHANGELOG-KO.md)
 - [기여 가이드](CONTRIBUTING-KO.md)
-- [문제 해결 가이드](docs/troubleshooting-ko.md) *(coming soon)*
-- [FAQ (한글)](docs/faq-ko.md) *(coming soon)*
 - [테스트 보고서](TEST-REPORT-KO.md)
 
 ## 🎓 How It Works
@@ -479,7 +477,7 @@ MIT License - see [LICENSE](LICENSE) file
 
 ## 🧬 Absorption History
 
-### ✅ Absorbed Projects (6/8 - 75% Milestone)
+### ✅ Absorbed Projects (7/8 - 87.5% Complete)
 
 **1. claude-mem** (v0.1.0 - 2025-01-28)
 - **Original**: [supermemoryai/claude-mem](https://github.com/supermemoryai/claude-mem)
@@ -554,13 +552,11 @@ MIT License - see [LICENSE](LICENSE) file
   - Interactive learning paths linked to actual tool usage
   - Expandable guide library for community contributions
 
-### 🔮 Next Absorptions
-
-**v0.6.0 (Jun 2025)**: [claude-scientific-skills](https://github.com/K-Dense-AI/claude-scientific-skills)
-- Scientific and research tools integration
-- Expected: +4-6 tools, 88/100 quality score
+### 🔮 Continuous Absorption
 
 **Vote for next absorption**: `node dist/cli.mjs vote <project>`
+
+Community suggestions are welcome! The absorption engine continuously evaluates high-quality Claude Code projects.
 
 ## 🌟 Inspired By & Credits
 
@@ -570,15 +566,9 @@ MIT License - see [LICENSE](LICENSE) file
 - [oh-my-claudecode](https://github.com/Yeachan-Heo/oh-my-claudecode) - Agent orchestration (v0.1.0)
 - [planning-with-files](https://github.com/OthmanAdi/planning-with-files) - TODO tracking (v0.2.0)
 
-### Future Absorptions
+### Reference Projects
 
-- [claude-scientific-skills](https://github.com/K-Dense-AI/claude-scientific-skills) - Scientific tools (v0.6.0)
-- [everything-claude-code](https://github.com/affaan-m/everything-claude-code) - Production patterns (v0.7.0)
-- Additional high-quality Claude Code projects (v0.8.0)
-
-### Reference & Best Practices
-
-- [everything-claude-code](https://github.com/affaan-m/everything-claude-code) - Production setup guide
+- [everything-claude-code](https://github.com/affaan-m/everything-claude-code) - Production setup guide and patterns
 - [Anthropic Tool Search](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool) - Tool search concept
 
 ---
