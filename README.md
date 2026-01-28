@@ -245,7 +245,9 @@ FLUX uses a clean 2-layer architecture:
 
 ## 📚 Documentation
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) - Technical architecture and design decisions
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - Technical architecture and design decisions
+- [NPM_PUBLISHING_GUIDE.md](docs/NPM_PUBLISHING_GUIDE.md) - Publishing to npm registry
+- [RELEASE_NOTES_v2.0.0.md](docs/RELEASE_NOTES_v2.0.0.md) - v2.0.0 release notes
 - [CHANGELOG.md](CHANGELOG.md) - Version history and release notes
 - [CONTRIBUTING.md](CONTRIBUTING.md) - How to contribute to FLUX
 
