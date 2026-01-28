@@ -1,3 +1,6 @@
+import path from 'path';
+import os from 'os';
+
 // Core exports
 export { AwesomePluginGateway, type MCPServerConfig, type ToolMetadata, type GatewayOptions } from './core/gateway.js';
 export { SessionManager, type Session } from './core/session-manager.js';
@@ -33,6 +36,27 @@ export {
   type DifficultyLevel,
   type LearningStatus
 } from './features/guide/guide-types.js';
+
+// Plugin wrapper exports
+export { getPluginManagers, resetPlugin, loadConfig, type PluginConfig } from './plugin/index.js';
+
+// Factory function for easy instantiation
+export async function createAwesomePlugin(options?: {
+  dbPath?: string;
+  logLevel?: 'debug' | 'info' | 'warn' | 'error';
+}) {
+  const { MemoryManager } = await import('./features/memory/memory-manager.js');
+  const { PlanningManager } = await import('./features/planning/planning-manager.js');
+  const { GuideManager } = await import('./features/guide/guide-manager.js');
+
+  const dbPath = options?.dbPath || path.join(os.homedir(), '.awesome-plugin', 'data.db');
+
+  return {
+    memory: new MemoryManager(dbPath),
+    planning: new PlanningManager(dbPath),
+    guide: new GuideManager(dbPath),
+  };
+}
 
 // Main entry point for running as MCP server
 async function main() {
