@@ -10,6 +10,9 @@ import { ToolLoader } from './tool-loader.js';
 import { QueryProcessor } from '../search/query-processor.js';
 import { MetadataStore } from '../storage/metadata-store.js';
 import { MCPClient } from './mcp-client.js';
+import { MemoryManager } from '../features/memory/memory-manager.js';
+import { AgentOrchestrator } from '../features/agents/agent-orchestrator.js';
+import { PlanningManager } from '../features/planning/planning-manager.js';
 
 export interface MCPServerConfig {
   id: string;
@@ -37,6 +40,9 @@ export class AwesomePluginGateway {
   private toolLoader: ToolLoader;
   private queryProcessor: QueryProcessor;
   private metadataStore: MetadataStore;
+  private memoryManager: MemoryManager;
+  private agentOrchestrator: AgentOrchestrator;
+  private planningManager: PlanningManager;
   private connectedServers: Map<string, MCPServerConfig>;
   private mcpClients: Map<string, MCPClient>;
   private availableTools: Map<string, ToolMetadata>;
@@ -47,7 +53,7 @@ export class AwesomePluginGateway {
     this.server = new Server(
       {
         name: 'awesome-plugin',
-        version: '0.1.0',
+        version: '0.2.0',
       },
       {
         capabilities: {
@@ -62,13 +68,72 @@ export class AwesomePluginGateway {
     this.metadataStore = new MetadataStore({
       filepath: options.dbPath || ':memory:',
     });
+    this.memoryManager = new MemoryManager(options.dbPath || ':memory:');
+    this.agentOrchestrator = new AgentOrchestrator(options.dbPath || ':memory:');
+    this.planningManager = new PlanningManager(options.dbPath || ':memory:');
     this.connectedServers = new Map();
     this.mcpClients = new Map();
     this.availableTools = new Map();
     this.enableToolSearch = options.enableToolSearch ?? true;
     this.maxLayer2Tools = options.maxLayer2Tools ?? 15;
 
+    // Register internal tools (memory, agents, planning)
+    this.registerInternalTools();
+
     this.setupHandlers();
+  }
+
+  /**
+   * Register internal feature tools (memory, agents, planning)
+   */
+  private registerInternalTools(): void {
+    // Register the internal plugins in metadata store
+    this.metadataStore.addPlugin({
+      id: 'internal:memory',
+      name: 'Internal Memory Management',
+      command: 'internal',
+      qualityScore: 100,
+    });
+
+    this.metadataStore.addPlugin({
+      id: 'internal:agents',
+      name: 'Internal Agent Orchestration',
+      command: 'internal',
+      qualityScore: 100,
+    });
+
+    this.metadataStore.addPlugin({
+      id: 'internal:planning',
+      name: 'Internal Planning & TODO Tracking',
+      command: 'internal',
+      qualityScore: 100,
+    });
+
+    // Register memory management tools
+    const memoryTools = this.memoryManager.getToolDefinitions();
+    for (const tool of memoryTools) {
+      this.availableTools.set(tool.name, tool);
+    }
+
+    // Register agent orchestration tools
+    const agentTools = this.agentOrchestrator.getToolDefinitions();
+    for (const tool of agentTools) {
+      this.availableTools.set(tool.name, tool);
+    }
+
+    // Register planning tools
+    const planningTools = this.planningManager.getToolDefinitions();
+    for (const tool of planningTools) {
+      this.availableTools.set(tool.name, tool);
+    }
+
+    // Register in ToolLoader for BM25 search
+    this.toolLoader.registerTools([...memoryTools, ...agentTools, ...planningTools]);
+
+    // Save to metadata store
+    this.metadataStore.addTools([...memoryTools, ...agentTools, ...planningTools]);
+
+    console.log(`Registered ${memoryTools.length} memory + ${agentTools.length} agent + ${planningTools.length} planning tools`);
   }
 
   private setupHandlers(): void {
@@ -107,18 +172,26 @@ export class AwesomePluginGateway {
       this.toolLoader.recordToolUsage(toolName);
       this.metadataStore.updateToolUsage(toolName);
 
-      // Forward the tool call to the appropriate MCP server
-      const client = this.mcpClients.get(toolMetadata.serverId);
-      if (!client) {
-        throw new Error(`MCP server not connected: ${toolMetadata.serverId}`);
-      }
-
       const startTime = performance.now();
       let success = true;
       let result;
 
       try {
-        result = await client.callTool(toolName, request.params.arguments || {});
+        // Route to internal features first
+        if (toolMetadata.serverId === 'internal:memory') {
+          result = await this.memoryManager.handleToolCall(toolName, request.params.arguments || {});
+        } else if (toolMetadata.serverId === 'internal:agents') {
+          result = await this.agentOrchestrator.handleToolCall(toolName, request.params.arguments || {});
+        } else if (toolMetadata.serverId === 'internal:planning') {
+          result = await this.planningManager.handleToolCall(toolName, request.params.arguments || {});
+        } else {
+          // Forward to external MCP server
+          const client = this.mcpClients.get(toolMetadata.serverId);
+          if (!client) {
+            throw new Error(`MCP server not connected: ${toolMetadata.serverId}`);
+          }
+          result = await client.callTool(toolName, request.params.arguments || {});
+        }
       } catch (error: any) {
         success = false;
         console.error(`Tool call failed (${toolName}):`, error);
@@ -318,6 +391,11 @@ export class AwesomePluginGateway {
     for (const serverId of this.connectedServers.keys()) {
       await this.disconnectServer(serverId);
     }
+
+    // Close internal features
+    this.memoryManager.close();
+    this.agentOrchestrator.close();
+    this.planningManager.close();
 
     // Close database
     this.metadataStore.close();

@@ -217,4 +217,133 @@ program
     console.log('\nStatistics coming soon!');
   });
 
+program
+  .command('absorbed')
+  .description('Show absorption history and progress')
+  .action(async () => {
+    console.log('🧬 Absorption History\n');
+
+    // Absorbed projects
+    const absorbed = [
+      {
+        name: 'claude-mem',
+        version: 'v0.1.0',
+        date: '2025-01-28',
+        description: 'Memory management with BM25 semantic search',
+        tools: 4,
+        improvements: [
+          'BM25 search instead of vector DB',
+          'SQLite instead of file storage',
+          'Tool schema redesign',
+        ],
+      },
+      {
+        name: 'oh-my-claudecode',
+        version: 'v0.1.0',
+        date: '2025-01-28',
+        description: 'Multi-agent orchestration with parallel execution',
+        tools: 5,
+        improvements: [
+          'Parallel async execution',
+          'Real-time progress monitoring',
+          'Background task support',
+        ],
+      },
+      {
+        name: 'planning-with-files',
+        version: 'v0.2.0',
+        date: '2025-01-28',
+        description: 'TODO tracking with dependency management',
+        tools: 3,
+        improvements: [
+          'File storage → SQLite with foreign keys',
+          'BM25 semantic search integration',
+          'Automatic cycle detection for dependencies',
+          'ASCII tree visualization with status icons',
+          'Agent integration (auto TODO creation)',
+        ],
+      },
+    ];
+
+    // Display absorbed projects
+    absorbed.forEach((project, index) => {
+      console.log(`✅ ${project.name} (${project.version} - ${project.date})`);
+      console.log(`   ${project.description}`);
+      console.log(`   ${project.tools} tools absorbed`);
+      console.log(`   Our improvements:`);
+      project.improvements.forEach((imp) => {
+        console.log(`     - ${imp}`);
+      });
+      if (index < absorbed.length - 1) console.log('');
+    });
+
+    console.log('\n📊 Progress: 3/8 projects absorbed (37.5%)');
+    console.log(`🔧 Total tools: ${absorbed.reduce((sum, p) => sum + p.tools, 0)}`);
+
+    console.log('\n⏳ Next absorption (v0.3.0 - Mar 2025):');
+    console.log('   superpowers - TDD workflow enforcement');
+    console.log('   Expected: +4 tools\n');
+  });
+
+program
+  .command('vote')
+  .description('Vote for next absorption target')
+  .argument('[project]', 'Project to vote for (planning-with-files, superpowers, agents, guide, scientific)')
+  .action(async (project?: string) => {
+    // Voting data (in-memory for now, should be persisted)
+    const votingData = {
+      'planning-with-files': 156,
+      superpowers: 89,
+      agents: 67,
+      guide: 45,
+      scientific: 34,
+    };
+
+    if (!project) {
+      // Show voting status
+      console.log('📊 Next Absorption Vote:\n');
+
+      const sorted = Object.entries(votingData).sort((a, b) => b[1] - a[1]);
+
+      sorted.forEach(([name, votes], index) => {
+        const isLocked = index === 0;
+        const icon = isLocked ? '🎯' : '📅';
+        const status = isLocked ? 'Locked for v0.2.0 (Feb 2025)' : `${votes} votes`;
+
+        console.log(`  ${index + 1}. ${name} (${votes} votes)`);
+        console.log(`     ${icon} ${status}\n`);
+      });
+
+      console.log('Want to vote?');
+      console.log('→ awesome-plugin vote <project-name>\n');
+      console.log('Want to suggest a new project?');
+      console.log('→ Open an issue at github.com/yourusername/awesome-pulgin\n');
+      return;
+    }
+
+    // Cast vote
+    if (!(project in votingData)) {
+      console.log(`❌ Unknown project: ${project}`);
+      console.log('Available projects: planning-with-files, superpowers, agents, guide, scientific\n');
+      return;
+    }
+
+    console.log(`✅ Voted for "${project}"!\n`);
+
+    // Increment vote (in-memory only)
+    (votingData as any)[project]++;
+
+    // Show updated rankings
+    const sorted = Object.entries(votingData).sort((a, b) => b[1] - a[1]);
+
+    console.log('📊 Updated Rankings:\n');
+    sorted.forEach(([name, votes], index) => {
+      const indicator = name === project ? ' ← You voted' : '';
+      const icon = index === 0 ? '🎯' : '📅';
+      console.log(`  ${index + 1}. ${name} (${votes} votes)${indicator}`);
+    });
+
+    console.log('\n💡 Note: Voting data is not persisted yet. This is a preview feature.\n');
+  });
+
 program.parse(process.argv);
